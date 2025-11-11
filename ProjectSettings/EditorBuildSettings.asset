@@ -6,10 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/DA_Minimal_Setup/DA_Setup.unity
-    guid: 35778ffe92eb9ec4fad2595cc6d3d721
+    path: Assets/Scenes/Bootstrap.unity
+    guid: 26599ba725f7aac4bb4bf3d4fa12e73c
   - enabled: 1
-    path: Assets/Scenes/MultiplayerTest.unity
+    path: Assets/Scenes/MainMenu.unity
+    guid: 0ee8f4ceb1cc818468f96075d8dbd395
+  - enabled: 1
+    path: Assets/Scenes/Game.unity
     guid: 3454b179e43cd1246a1a6d005718e422
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

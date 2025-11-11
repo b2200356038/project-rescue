@@ -53,7 +53,7 @@ public class ConnectionManager : MonoBehaviour
 
         if (GUILayout.Button("Create or Join Session"))
         {
-            CreateOrJoinSessionAsync();
+            _ = CreateOrJoinSessionAsync();
         }
     }
     private void OnSessionOwnerPromoted(ulong sessionOwnerPromoted)

@@ -7,7 +7,6 @@ public class PlayerController : NetworkBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private InputReader input;
-
     private CharacterController _controller;
 
     private void Awake()

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1476690290160542647}
   - component: {fileID: 2326792564534530707}
-  - component: {fileID: 755403362988690388}
+  - component: {fileID: 8872135097965137442}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -48,11 +48,11 @@ MonoBehaviour:
   NetworkManagerExpanded: 0
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 755403362988690388}
+    NetworkTransport: {fileID: 8872135097965137442}
     PlayerPrefab: {fileID: 0}
     Prefabs:
       NetworkPrefabsLists:
-      - {fileID: 11400000, guid: da91a6be22e21be44a298fcf6ab70a3e, type: 2}
+      - {fileID: 11400000, guid: 9f214d8f8b0bc334aa13aeb1791927a4, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
@@ -76,7 +76,7 @@ MonoBehaviour:
     OldPrefabList: []
   RunInBackground: 1
   LogLevel: 1
---- !u!114 &755403362988690388
+--- !u!114 &8872135097965137442
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -85,9 +85,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7879037608164143994}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 637a7c36dc874286a7ac74b1aeabc1ad, type: 3}
+  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.Services.Multiplayer::Unity.Services.DistributedAuthority.DistributedAuthorityTransport
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Transports.UTP.UnityTransport
   m_ProtocolType: 0
   m_UseWebSockets: 0
   m_UseEncryption: 0

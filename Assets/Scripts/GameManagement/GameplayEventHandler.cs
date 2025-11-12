@@ -28,7 +28,7 @@ namespace GameManagement
             OnReturnToMainMenuButtonPressed?.Invoke();
         }
         
-        internal static void QuitGameButtonClicked()
+        internal static void QuitGameButtonPressed()
         {
             OnQuitGameButtonPressed?.Invoke();
         }

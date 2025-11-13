@@ -74,7 +74,8 @@ namespace Input
     /// }
     /// </code>
     /// </example>
-    public partial class @AvatarActions: IInputActionCollection2, IDisposable
+    public partial class 
+        @AvatarActions: IInputActionCollection2, IDisposable
     {
         /// <summary>
         /// Provides access to the underlying asset instance.

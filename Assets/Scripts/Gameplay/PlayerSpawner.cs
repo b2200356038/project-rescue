@@ -3,21 +3,22 @@ using UnityEngine;
 
 namespace Gameplay
 {
-    public class PlayerSpawner : NetworkBehaviour
+    class PlayerSpawner : NetworkBehaviour
     {
         [SerializeField]
-        private NetworkObject playerPrefab;
+        NetworkObject playerPrefab;
+
         protected override void OnNetworkSessionSynchronized()
         {
-            Debug.Log("2er");
+            Debug.Assert(playerPrefab != null, $"Prefab reference '{nameof(playerPrefab)}' is missing or not assigned.");
 
-            if (playerPrefab!=null)
+            if (playerPrefab != null)
             {
-                Debug.Log("er");
                 var spawnPoint = PlayerSpawnPoints.Instance.GetRandomSpawnPoint();
                 playerPrefab.InstantiateAndSpawn(networkManager: NetworkManager, ownerClientId: NetworkManager.LocalClientId, isPlayerObject: true, position: spawnPoint.position, rotation: spawnPoint.rotation);
             }
-            base.InternalOnNetworkSessionSynchronized();
+
+            base.OnNetworkSessionSynchronized();
         }
     }
 }

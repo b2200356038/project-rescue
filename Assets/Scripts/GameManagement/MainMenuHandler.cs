@@ -1,22 +1,20 @@
-using System;
 using System.Threading.Tasks;
 using Input;
 using UnityEngine;
 
 namespace GameManagement
 {
-    public class MainMenuHandler : MonoBehaviour
+    class MainMenuHandler : MonoBehaviour
     {
-        private void Start()
+        void Start()
         {
             InputSystemManager.Instance.EnableUIInputs();
             GameplayEventHandler.OnConnectToSessionCompleted += OnConnectToSessionCompleted;
         }
 
-        private void OnDestroy()
+        void OnDestroy()
         {
             GameplayEventHandler.OnConnectToSessionCompleted -= OnConnectToSessionCompleted;
-
         }
 
         void OnConnectToSessionCompleted(Task task, string sessionName)

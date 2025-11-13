@@ -47,7 +47,7 @@ namespace UI
 
         private void OnQuitButtonPressed()
         {
-            GameplayEventHandler.QuitGameButtonPressed();
+            GameplayEventHandler.QuitGamePressed();
         }
 
         private void OnConnectToSessionCompleted(Task task, string sessionName)

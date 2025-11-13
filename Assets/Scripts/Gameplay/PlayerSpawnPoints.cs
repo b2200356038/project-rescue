@@ -3,19 +3,24 @@ using UnityEngine;
 
 namespace Gameplay
 {
-    public class PlayerSpawnPoints : MonoBehaviour
+    class PlayerSpawnPoints : MonoBehaviour
     {
         internal static PlayerSpawnPoints Instance;
-        [SerializeField] private Transform[] spawnPoints;
 
+        [SerializeField] private Transform[] playerSpawnPoints;
+
+        void Awake()
+        {
+            Instance = this;
+        }
 
         internal Transform GetRandomSpawnPoint()
         {
-            if (spawnPoints.Length == 0)
+            if (playerSpawnPoints.Length == 0)
             {
-                throw new Exception("No player Transforms found");
+                throw new Exception("No player Transforms found in m_PlayerSpawnPoints");
             }
-            return spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
+            return playerSpawnPoints[UnityEngine.Random.Range(0, playerSpawnPoints.Length)];
         }
     }
 }

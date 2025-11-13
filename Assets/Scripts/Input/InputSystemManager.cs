@@ -5,8 +5,8 @@ namespace Input
     {
         public static InputSystemManager Instance { get; private set; }
         
-        private InputSystem_Actions.UIActions _uiInputs;
-        private InputSystem_Actions.PlayerActions _gameplayInputs;
+        private AvatarActions.UIActions _uiInputs;
+        private AvatarActions.PlayerActions _gameplayInputs;
 
         private void Awake()
         {

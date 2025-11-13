@@ -10,13 +10,11 @@ namespace Editor
     {
         public override VisualElement CreateInspectorGUI()
         {
-            // Create a new VisualElement to be the root of the inspector UI
             var root = new VisualElement();
 
-            // Generate default inspector for AvatarTransform
             serializedObject.Update();
             SerializedProperty property = serializedObject.GetIterator();
-            property.NextVisible(true); // Skip the script field
+            property.NextVisible(true); 
             while (property.NextVisible(false))
             {
                 var propertyField = new PropertyField(property);

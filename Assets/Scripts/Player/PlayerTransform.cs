@@ -23,14 +23,13 @@ namespace Player
                 base.OnNetworkSpawn();
                 return;
             }
-            _mainCamera=Camera.main;
             _playerId.Value= new FixedString32Bytes(AuthenticationService.Instance.PlayerId);
-            Rigidbody.isKinematic = false;
-            Rigidbody.freezeRotation = true;
-            Rigidbody.linearVelocity = Vector3.zero;
             playerInput.enabled = true;
             physicsPlayerController.enabled = true;
             GameInput.Actions.Player.Jump.performed += OnJumped;
+            Rigidbody.isKinematic = false;
+            Rigidbody.freezeRotation = true;
+            Rigidbody.linearVelocity = Vector3.zero;
             this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.Update);
             this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.FixedUpdate);
             base.OnNetworkSpawn();
@@ -39,9 +38,6 @@ namespace Player
         public override void OnNetworkDespawn()
         {  
             base.OnNetworkDespawn();
-            
-            base.OnNetworkDespawn();
-
             GameInput.Actions.Player.Jump.performed -= OnJumped;
             this.UnregisterAllNetworkUpdates();
         }
@@ -64,6 +60,10 @@ namespace Player
             physicsPlayerController.SetMovement(movement);
             var isSprinting = GameInput.Actions.Player.Sprint.ReadValue<float>() > 0f;
             physicsPlayerController.SetSprint(isSprinting);
+        }
+        private void OnCollisionEnter(Collision collision)
+        {
+            Debug.Log($"[OnCollisionEnter] {name} collided with {collision.gameObject.name}");
         }
         public void NetworkUpdate(NetworkUpdateStage updateStage)
         {

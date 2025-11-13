@@ -136,6 +136,10 @@ namespace Physics
                     Rigidbody.AddForce(Force.Value, ForceMode.Impulse);
                 }
             }
+            else
+            {
+                NetworkRigidbody.SetIsKinematic(true);
+            }
             base.OnOwnershipChanged(previous, current);
         }
 
@@ -155,7 +159,6 @@ namespace Physics
                 TargetForce = force,
                 AppliedForce = Vector3.zero,
             };
-
             RemoteAppliedForce.Add(remoteForce);
         }
         
@@ -244,8 +247,10 @@ namespace Physics
         
         public override void OnNetworkDespawn()
         {
+            RigidbodyContactEventManager.Instance.RegisterHandler(this, false);
             base.OnNetworkDespawn();
-            //add pooling
+
+            
         }
 
         protected Vector3 GetObjectAngularVelocity()

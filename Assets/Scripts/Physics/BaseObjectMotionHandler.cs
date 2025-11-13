@@ -105,6 +105,13 @@ namespace Physics
         [Rpc(SendTo.Authority, RequireOwnership = false)]
         public void HandleCollisionRpc(CollisionMessageInfo collisionMessage, RpcParams rpcParams = default)
         {
+            if (!HasAuthority)
+            {
+                SendCollisionMessage(collisionMessage);
+                return;
+            }
+            collisionMessage.SourceOwner = rpcParams.Receive.SenderClientId;
+            collisionMessage.TargetOwner = OwnerClientId;
             HandleCollision(collisionMessage);
         }
 
@@ -129,6 +136,10 @@ namespace Physics
             bool hasCollisionStay = false,
             Vector3 averagedCollisionStayNormal = default)
         {
+            if (!IsSpawned)
+            {
+                return;
+            }
             OnContactEvent(eventId, averagedCollisionNormal, collidingBody, contactPoint, hasCollisionStay,
                 averagedCollisionStayNormal);
             LastEventId = eventId;
@@ -145,8 +156,8 @@ namespace Physics
 
         protected virtual void OnContactEvent(ulong eventId, Vector3 averagedCollisionNormal, Rigidbody collidingBody,
             Vector3 contactPoint, bool hasCollisionStay = false, Vector3 averagedCollisionStayNormal = default)
-        {
-        // Child class override
+        { 
+            // Child class override
         }
     }
 }

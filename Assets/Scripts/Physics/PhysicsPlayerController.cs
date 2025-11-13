@@ -55,24 +55,26 @@ namespace Physics
             var desiredVelocity = _movement * (_sprint
                 ? physicsPlayerControllerSettings.SprintSpeed
                 : physicsPlayerControllerSettings.WalkSpeed);
+
             var targetVelocity = new Vector3(desiredVelocity.x, velocity.y, desiredVelocity.z);
             var velocityChange = targetVelocity - velocity;
+
             if (Grounded)
             {
                 var force = velocityChange * physicsPlayerControllerSettings.Acceleration;
-                rb.AddForce(force,ForceMode.Force);
+                rb.AddForce(force, ForceMode.Force);
             }
             else
             {
-                var force = velocityChange * physicsPlayerControllerSettings.Acceleration*physicsPlayerControllerSettings.AirControlFactor;
-                rb.AddForce(force,ForceMode.Force);
+                var force = velocityChange * physicsPlayerControllerSettings.Acceleration *
+                            physicsPlayerControllerSettings.AirControlFactor;
+                rb.AddForce(force, ForceMode.Force);
             }
-            var targetAngle = Mathf.Atan2(_movement.x, _movement.z) * Mathf.Rad2Deg;
-            var targetRotation = Quaternion.Euler(0, targetAngle, 0);
-            var smoothRotation = Quaternion.Lerp(rb.rotation, targetRotation, Time.fixedDeltaTime * physicsPlayerControllerSettings.RotationSpeed);
-            rb.MoveRotation(smoothRotation);
+            
+
             _movement = Vector3.zero;
         }
+
 
 
         private void ApplyJump()

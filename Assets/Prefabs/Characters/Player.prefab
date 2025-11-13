@@ -744,7 +744,7 @@ GameObject:
   - component: {fileID: 2514843844146814304}
   - component: {fileID: 8360556616961951514}
   - component: {fileID: 6807885437899218875}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: PlayerArmature
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -807,13 +807,13 @@ CapsuleCollider:
     m_Bits: 0
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
-  m_ProvidesContacts: 0
+  m_ProvidesContacts: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
+  m_Radius: 0.3
+  m_Height: 1.8
   m_Direction: 1
-  m_Center: {x: 0, y: 1, z: 0}
+  m_Center: {x: 0, y: 0.9, z: 0}
 --- !u!1 &3036600560195875718
 GameObject:
   m_ObjectHideFlags: 0
@@ -1304,9 +1304,9 @@ GameObject:
   - component: {fileID: 378099091213283077}
   - component: {fileID: 2864305741433477372}
   - component: {fileID: 4745766379562620470}
+  - component: {fileID: 8167933289879102779}
   - component: {fileID: 4710238820213277529}
   - component: {fileID: 4903152183366241606}
-  - component: {fileID: 8167933289879102779}
   - component: {fileID: 2944192808106327396}
   m_Layer: 0
   m_Name: Player
@@ -1343,7 +1343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3001504883
+  GlobalObjectIdHash: 2473698027
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 0
@@ -1383,50 +1383,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 80
   m_CollisionDetection: 2
---- !u!114 &4710238820213277529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5478015027486214707}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b64f5aab0063a5d4d9de179b447f2ad1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Physics.PhysicsPlayerController
-  rb: {fileID: 4745766379562620470}
-  physicsPlayerControllerSettings: {fileID: 11400000, guid: 0d3e0ef4c3487904f90abbec2dc4fcc2, type: 2}
---- !u!114 &4903152183366241606
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5478015027486214707}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Actions: {fileID: -944628639613478452, guid: 51645e57100a7c347a04cb5480066cce, type: 3}
-  m_NotificationBehavior: 0
-  m_UIInputModule: {fileID: 0}
-  m_DeviceLostEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_DeviceRegainedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ControlsChangedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
-  m_DefaultActionMap: Player
-  m_SplitScreenIndex: -1
-  m_Camera: {fileID: 0}
 --- !u!114 &8167933289879102779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1471,6 +1427,50 @@ MonoBehaviour:
   maxVelocity: 10
   playerInput: {fileID: 4903152183366241606}
   physicsPlayerController: {fileID: 4710238820213277529}
+--- !u!114 &4710238820213277529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478015027486214707}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b64f5aab0063a5d4d9de179b447f2ad1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Physics.PhysicsPlayerController
+  rb: {fileID: 4745766379562620470}
+  physicsPlayerControllerSettings: {fileID: 11400000, guid: 0d3e0ef4c3487904f90abbec2dc4fcc2, type: 2}
+--- !u!114 &4903152183366241606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478015027486214707}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Actions: {fileID: -944628639613478452, guid: 51645e57100a7c347a04cb5480066cce, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: Player
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
 --- !u!114 &2944192808106327396
 MonoBehaviour:
   m_ObjectHideFlags: 0

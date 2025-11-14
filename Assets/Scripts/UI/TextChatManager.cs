@@ -41,7 +41,7 @@ namespace UI
             //textChatView.SetActive(false);
             BindSessionEvents(true);
             _messages.Clear();
-            AddMessage(new ChatMessage("System", "Enjoy!"));
+            //AddMessage(new ChatMessage("System", "Enjoy!"));
         }
 
         void OnSubmit(string _)
@@ -143,8 +143,9 @@ namespace UI
 
         void OnChannelMessageReceived(string sender, string message, bool fromSelf)
         {
-            ChatMessage chatMessage = new ChatMessage(sender, message);
-
+            string nameColorHex = fromSelf ? "#F0FFFF" : "#D2FFFF";
+            string coloredSender = $"<color={nameColorHex}>{sender}</color>";
+            ChatMessage chatMessage = new ChatMessage(coloredSender, message);
             AddMessage(chatMessage);
         }
 
@@ -156,8 +157,7 @@ namespace UI
             TMP_Text messageText = messageObj.transform.Find("MessageText")?.GetComponent<TMP_Text>();
             if (messageText != null)
             {
-                string coloredName = $"<color=#D2FFFF>{message.name}</color>";
-                messageText.text = $"{coloredName}: {message.message}";
+                messageText.text = $"{message.name}: {message.message}";
             }
             Canvas.ForceUpdateCanvases();
             if (scrollRect != null)

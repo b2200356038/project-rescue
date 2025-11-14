@@ -16,7 +16,7 @@ MonoBehaviour:
   SprintSpeed: 50
   Acceleration: 50
   DragCoefficient: 3
-  AirControlFactor: 0.5
+  AirControlFactor: 1
   JumpImpusle: 80
   CustomGravityMultiplier: 2
   RotationSpeed: 13

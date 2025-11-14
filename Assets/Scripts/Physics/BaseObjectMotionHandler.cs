@@ -4,7 +4,7 @@ using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 
-namespace Physics
+namespace Game.Physics
 {
     class BaseObjectMotionHandler : NetworkTransform, ICollisionHandler, IContactEventHandlerWithInfo
     {

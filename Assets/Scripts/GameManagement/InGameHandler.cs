@@ -1,7 +1,8 @@
-using Input;
+using Game.GameManagement;
+using Game.Input;
 using UnityEngine;
 
-namespace GameManagement
+namespace Game.GameManagement
 {
     class InGameHandler : MonoBehaviour
     {

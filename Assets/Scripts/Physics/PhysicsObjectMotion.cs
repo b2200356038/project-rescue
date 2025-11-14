@@ -3,9 +3,9 @@ using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
-using Utils;
+using Game.Utils;
 
-namespace Physics
+namespace Game.Physics
 {
     
     class PhysicsObjectMotion : BaseObjectMotionHandler

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Physics
+namespace Game.Physics
 {
     [CreateAssetMenu(fileName = "PhysicsPlayerControllerSettings", menuName = "ScriptableObjects/PhysicsPlayerControllerSettings", order = 1)]
     class PhysicsPlayerControllerSettings : ScriptableObject

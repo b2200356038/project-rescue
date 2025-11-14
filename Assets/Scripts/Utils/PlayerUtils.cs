@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Utils
+namespace Game.Utils
 {
     public class PlayerUtils : MonoBehaviour
     {

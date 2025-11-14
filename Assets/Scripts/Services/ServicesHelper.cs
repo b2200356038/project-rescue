@@ -1,13 +1,13 @@
 using System;
 using System.Threading.Tasks;
-using GameManagement;
+using Game.GameManagement;
 using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 
-namespace Services
+namespace Game.Services
 {
     class ServicesHelper : MonoBehaviour
     {

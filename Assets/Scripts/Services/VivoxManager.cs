@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using GameManagement;
+using Game.GameManagement;
 using Unity.Services.Authentication;
 using Unity.Services.Vivox;
 using UnityEngine;
-using Utils;
+using Game.Utils;
 
-namespace Services
+namespace Game.Services
 {
     public class VivoxManager : MonoBehaviour
     {

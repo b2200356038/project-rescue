@@ -1,8 +1,8 @@
-using GameManagement;
+using Game.GameManagement;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Services
+namespace Game.Services
 {
     public class Vivox3DPositioning : NetworkBehaviour
     {

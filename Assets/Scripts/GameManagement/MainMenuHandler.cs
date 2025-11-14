@@ -1,8 +1,9 @@
 using System.Threading.Tasks;
-using Input;
+using Game.GameManagement;
+using Game.Input;
 using UnityEngine;
 
-namespace GameManagement
+namespace Game.GameManagement
 {
     class MainMenuHandler : MonoBehaviour
     {

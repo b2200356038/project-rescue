@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace Input
+namespace Game.Input
 {
     public static class GameInput
     {

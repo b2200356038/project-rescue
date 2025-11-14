@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Utils
+namespace Game.Utils
 {
     static class MathUtils
     {

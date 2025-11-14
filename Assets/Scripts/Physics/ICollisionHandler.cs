@@ -1,7 +1,7 @@
 
 using Unity.Netcode;
 
-namespace Physics
+namespace Game.Physics
 {
     internal interface ICollisionHandler
     {

@@ -1,6 +1,6 @@
 {
-    "name": "Physics",
-    "rootNamespace": "",
+    "name": "Game.Physics",
+    "rootNamespace": "Game",
     "references": [
         "Unity.Netcode.Runtime",
         "Utils"

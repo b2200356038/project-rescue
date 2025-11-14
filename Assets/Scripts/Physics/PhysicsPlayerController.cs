@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Physics
+namespace Game.Physics
 {
     [RequireComponent(typeof(Rigidbody))]
     public class PhysicsPlayerController : MonoBehaviour

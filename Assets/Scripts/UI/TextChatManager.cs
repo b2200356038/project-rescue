@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using Input;
+using Game.Input;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static GameManagement.GameplayEventHandler;
+using static Game.GameManagement.GameplayEventHandler;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 
-namespace UI
+namespace Game.UI
 {
     public class TextChatManager : MonoBehaviour
     {

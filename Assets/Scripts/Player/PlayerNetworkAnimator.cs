@@ -1,6 +1,6 @@
 using System;
-using Input;
-using Physics;
+using Game.Input;
+using Game.Physics;
 using Unity.Netcode.Components;
 using UnityEngine;
 

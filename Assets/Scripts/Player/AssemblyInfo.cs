@@ -1,2 +1,2 @@
 using System.Runtime.CompilerServices;
-[assembly: InternalsVisibleTo("Editor")]
+[assembly: InternalsVisibleTo("Game.Editor")]

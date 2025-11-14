@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Physics
+namespace Game.Physics
 {
     public enum CollisionType
     {

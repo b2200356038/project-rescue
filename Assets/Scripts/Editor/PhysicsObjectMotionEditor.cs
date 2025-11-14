@@ -1,9 +1,9 @@
-using Physics;
+using Game.Physics;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
-namespace Editor
+namespace Game.Editor
 {
     [CustomEditor(typeof(PhysicsObjectMotion))]
     class PhysicsObjectMotionEditor : UnityEditor.Editor

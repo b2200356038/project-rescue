@@ -1038,6 +1038,18 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3011417626348882569, guid: 97cc7c866c06d1640abba422583753a3, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3011417626348882569, guid: 97cc7c866c06d1640abba422583753a3, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3011417626348882569, guid: 97cc7c866c06d1640abba422583753a3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7163087495076846603, guid: 97cc7c866c06d1640abba422583753a3, type: 3}
       propertyPath: m_Name
       value: Chat

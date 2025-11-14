@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
-namespace Editor
+namespace Game.Editor
 {
     [CustomEditor(typeof(PlayerTransform))]
     class PlayerTransformEditor : UnityEditor.Editor

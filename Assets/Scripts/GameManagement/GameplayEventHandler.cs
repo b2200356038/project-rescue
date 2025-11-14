@@ -2,10 +2,9 @@ using System;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using Unity.Services.Vivox;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace GameManagement
+namespace Game.GameManagement
 {
     static class GameplayEventHandler
     {

@@ -1,2 +1,2 @@
 using System.Runtime.CompilerServices;
-[assembly: InternalsVisibleTo("Physics")]
+[assembly: InternalsVisibleTo("Game.Physics")]

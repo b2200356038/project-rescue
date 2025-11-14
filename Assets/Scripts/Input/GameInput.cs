@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace Input
 {
-    static class GameInput
+    public static class GameInput
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void RuntimeInitializeOnLoad()
@@ -9,6 +9,6 @@ namespace Input
             Actions = new AvatarActions();
             Actions.Enable();
         }
-        internal static AvatarActions Actions { get; private set; } = null!;
+        public static AvatarActions Actions { get; private set; } = null!;
     }
 }

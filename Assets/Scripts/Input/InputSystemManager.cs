@@ -28,12 +28,12 @@ namespace Input
             _gameplayInputs = GameInput.Actions.Player;
         }
 
-        internal void EnableUIInputs()
+        public void EnableUIInputs()
         {
             _gameplayInputs.Disable();
             _uiInputs.Enable();
         }
-        internal void EnableGameplayInputs()
+        public void EnableGameplayInputs()
         {
             _gameplayInputs.Enable();
             _uiInputs.Disable();

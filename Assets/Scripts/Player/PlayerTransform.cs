@@ -23,7 +23,7 @@ namespace Player
                 base.OnNetworkSpawn();
                 return;
             }
-            var camFollow = Camera.main.GetComponent<CameraFollow>();
+            var camFollow = Camera.main?.GetComponent<CameraFollow>();
             if (camFollow != null)
                 camFollow.SetTarget(transform);
             _playerId.Value= new FixedString32Bytes(AuthenticationService.Instance.PlayerId);

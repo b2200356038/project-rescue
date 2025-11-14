@@ -32,10 +32,10 @@ namespace Services
             }
 
             NetworkManager.Singleton.OnClientStopped += OnClientStopped;
-
             GameplayEventHandler.OnStartButtonPressed += OnStartButtonPressed;
             GameplayEventHandler.OnReturnToMainMenuButtonPressed += LeaveSession;
             GameplayEventHandler.OnQuitGameButtonPressed += OnQuitGameButtonPressed;
+            await VivoxManager.Instance.Initialize();
         }
 
         async void OnUnityServicesInitialized()

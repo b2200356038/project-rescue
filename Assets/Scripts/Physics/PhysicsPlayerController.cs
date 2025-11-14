@@ -15,6 +15,8 @@ namespace Physics
         private Vector3 _movement;
         private bool _jump;
         private bool _sprint;
+        
+        internal event Action PlayerJumped;
 
         internal void OnFixedUpdate()
         {
@@ -22,7 +24,6 @@ namespace Physics
             {
                 return;
             }
-
             UpdateGroundedStatus();
             ApplyMovement();
             ApplyJump();
@@ -82,8 +83,9 @@ namespace Physics
             if (_jump && Grounded)
             {          
                 rb.AddForce(Vector3.up *physicsPlayerControllerSettings.JumpImpusle, ForceMode.Impulse);
-                _jump = false;
+                PlayerJumped?.Invoke();
             }
+            _jump = false;
         }
 
         private void ApplyDrag()

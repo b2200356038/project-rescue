@@ -16,6 +16,12 @@ namespace GameManagement
         internal static event Action OnQuitGameButtonPressed;
         internal static event Action<Task, string> OnConnectToSessionCompleted;
         internal static event Action OnExitedSession;
+        
+        internal static event Action<string, string, bool> OnTextMessageReceived;
+        internal static event Action<string> OnSendTextMessage;
+        internal static event Action<bool, string> OnChatIsReady;
+        internal static event Action<VivoxParticipant> OnParticipantJoinedVoiceChat;
+        internal static event Action<VivoxParticipant> OnParticipantLeftVoiceChat;
 
         internal static void NetworkObjectDespawned(NetworkObject networkObject)
         {
@@ -45,6 +51,31 @@ namespace GameManagement
         internal static void ConnectToSessionComplete(Task task, string sessionName)
         {
             OnConnectToSessionCompleted?.Invoke(task, sessionName);
+        }
+        
+        internal static void ProcessTextMessageReceived(string senderName, string message, bool fromSelf)
+        {
+            OnTextMessageReceived?.Invoke(senderName, message, fromSelf);
+        }
+
+        internal static void SendTextMessage(string message)
+        {
+            OnSendTextMessage?.Invoke(message);
+        }
+
+        public static void SetTextChatReady(bool enabled, string channelName)
+        {
+            OnChatIsReady?.Invoke(enabled, channelName);
+        }
+
+        public static void ParticipantJoinedVoiceChat(VivoxParticipant vivoxParticipant)
+        {
+            OnParticipantJoinedVoiceChat?.Invoke(vivoxParticipant);
+        }
+
+        public static void ParticipantLeftVoiceChat(VivoxParticipant vivoxParticipant)
+        {
+            OnParticipantLeftVoiceChat?.Invoke(vivoxParticipant);
         }
 
         internal static void ExitedSession()

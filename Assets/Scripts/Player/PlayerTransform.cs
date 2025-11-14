@@ -23,6 +23,9 @@ namespace Player
                 base.OnNetworkSpawn();
                 return;
             }
+            var camFollow = Camera.main.GetComponent<CameraFollow>();
+            if (camFollow != null)
+                camFollow.SetTarget(transform);
             _playerId.Value= new FixedString32Bytes(AuthenticationService.Instance.PlayerId);
             playerInput.enabled = true;
             physicsPlayerController.enabled = true;
@@ -61,10 +64,7 @@ namespace Player
             var isSprinting = GameInput.Actions.Player.Sprint.ReadValue<float>() > 0f;
             physicsPlayerController.SetSprint(isSprinting);
         }
-        private void OnCollisionEnter(Collision collision)
-        {
-            Debug.Log($"[OnCollisionEnter] {name} collided with {collision.gameObject.name}");
-        }
+        
         public void NetworkUpdate(NetworkUpdateStage updateStage)
         {
             switch (updateStage)

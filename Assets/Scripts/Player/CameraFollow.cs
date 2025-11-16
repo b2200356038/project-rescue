@@ -6,21 +6,26 @@ namespace Player
     {
         [SerializeField] private Transform target;
         [SerializeField] private Vector3 offset;
-        [SerializeField] private float followSpeed = 20f;
+
+        private void Awake()
+        {
+            if (target != null)
+            {
+                offset = transform.position - target.position;
+            }
+        }
 
         public void SetTarget(Transform t)
         {
             target = t;
+            offset = transform.position - target.position;
         }
 
         private void LateUpdate()
         {
             if (target == null) return;
 
-            transform.position = Vector3.Lerp(
-                transform.position,
-                target.position + offset,
-                followSpeed * Time.deltaTime);
+            transform.position = target.position + offset;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using Game.Input;
 using Game.Physics;
+using Game.Player;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;

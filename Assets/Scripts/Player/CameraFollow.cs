@@ -1,31 +1,49 @@
 using UnityEngine;
 
-namespace Player
+namespace Game.Player
 {
     public class CameraFollow : MonoBehaviour
     {
-        [SerializeField] private Transform target;
-        [SerializeField] private Vector3 offset;
+        [Header("Target to follow")]
+        public Transform target;
+
+        [Header("Offsets")]
+        public Vector3 positionOffset = new Vector3(0, 5f, -8f);
+        public float positionSmoothTime = 0.1f;
+        
+        public float rotationSpeed = 10f;
+        private Vector3 _velocity = Vector3.zero;
 
         private void Awake()
         {
             if (target != null)
             {
-                offset = transform.position - target.position;
+                positionOffset = transform.position - target.position;
             }
         }
 
         public void SetTarget(Transform t)
         {
             target = t;
-            offset = transform.position - target.position;
+            if (target != null)
+            {
+                positionOffset = transform.position - target.position;
+            }
         }
 
-        private void LateUpdate()
+        private void FixedUpdate()
         {
             if (target == null) return;
-
-            transform.position = target.position + offset;
+            
+            Vector3 desiredPosition = target.position + positionOffset;
+            transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref _velocity, positionSmoothTime);
+            
+            Vector3 directionToTarget = target.position - transform.position;
+            if (directionToTarget != Vector3.zero)
+            {
+                Quaternion desiredRotation = Quaternion.LookRotation(directionToTarget, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, Time.fixedDeltaTime * rotationSpeed);
+            }
         }
     }
 }

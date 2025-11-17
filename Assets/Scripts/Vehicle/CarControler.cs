@@ -67,7 +67,7 @@ namespace Game.Vehicle
             float finalAngle = steerAngle * _smoothSteer;
 
             for (int i = 0; i < steerWheels.Length; i++)
-                wheels[steerWheels[i]].steerAngle = finalAngle;
+                wheels[steerWheels[i]].SetSteerAngle(finalAngle);
         }
         
         void ApplyMotorAndBrake()
@@ -88,11 +88,8 @@ namespace Game.Vehicle
                 return;
             }
             
-            if (forwardInput > 0f)
-            {
-                foreach (int id in driveWheels)
-                    wheels[id].motorTorque = forwardInput * maxMotorTorque;
-            }
+            foreach (int id in driveWheels)
+                wheels[id].motorTorque = forwardInput * maxMotorTorque;
         }
     }
 }

@@ -67,7 +67,7 @@ namespace Game.UI
 
         void OnTextfieldFocusOut(string _)
         {
-            InputSystemManager.Instance.EnableGameplayInputs();
+            InputSystemManager.Instance.EnableOnFootInputs();
         }
 
         void OnDisable()

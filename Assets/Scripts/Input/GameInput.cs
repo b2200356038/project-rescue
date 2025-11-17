@@ -6,9 +6,9 @@ namespace Game.Input
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void RuntimeInitializeOnLoad()
         {
-            Actions = new AvatarActions();
+            Actions = new GameActions();
             Actions.Enable();
         }
-        public static AvatarActions Actions { get; private set; } = null!;
+        public static GameActions Actions { get; private set; } = null!;
     }
 }

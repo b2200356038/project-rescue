@@ -1,16 +1,37 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Game.Vehicle.Wheel
 {
-    public class WheelController : MonoBehaviour
+    public class WheelController : NetworkBehaviour
     {
+
+        private const float LOW_SPEED_THRESHOLD = 0.12f;
+        private const float MIN_TORQUE_THRESHOLD = 0.1f;
+        private const float ANGULAR_VELOCITY_LOCK_THRESHOLD = 0.5f;
+        private const float SPRING_EXTENSION_SPEED = 6f;
+        private const float FORWARD_SPEED_BASE_CLAMP = 1.5f;
+        private const float FORWARD_SPEED_MIN_CLAMP = 1.5f;
+        private const float FORWARD_SPEED_MAX_CLAMP = 10f;
+        private const float SLIP_ANGLE_CONVERSION = 0.01111f; 
+        private const float FORCE_POSITION_OFFSET_FACTOR = 0.8f;
+        private const float ANGULAR_VEL_SMOOTHING = 10f;
+        private const float SPRING_LENGTH_SMOOTHING = 15f;
+        
+
         [Header("References")] [SerializeField]
         private Rigidbody targetRigidbody;
+
+        [SerializeField] private Transform visualTransform;
+        
 
         [Header("Wheel Properties")] [SerializeField]
         public float radius = 0.35f;
 
         [SerializeField] public float width = 0.25f;
+        [SerializeField] public float wheelMass = 20f;
+
+
 
         [Header("Spring")] [SerializeField] private float springMaxLength = 0.3f;
         [SerializeField] private float springMaxForce = 8000f;
@@ -18,14 +39,48 @@ namespace Game.Vehicle.Wheel
 
         [Header("Damper")] [SerializeField] private float damperBumpRate = 2000f;
         [SerializeField] private float damperReboundRate = 2000f;
+        
+
+        [Header("Torque")] [SerializeField] public float motorTorque = 0f;
+        [SerializeField] public float brakeTorque;
+        [SerializeField] private float rollingResistanceTorque = 30f;
+        
+
+        [Header("Steering")] [SerializeField] private float steerAngle;
+        
+
+        [Header("Friction Settings")] [SerializeField]
+        private FrictionPreset activeFrictionPreset;
+
+        [SerializeField] private Friction forwardFriction;
+        [SerializeField] private Friction sideFriction;
+        [SerializeField] private float loadRating = 5400f;
+        [Range(0, 1)] [SerializeField] private float frictionCircleStrength = 1f;
+        [Range(1f, 5f)] [SerializeField] private float frictionCirclePower = 3f;
+        [SerializeField] private int frictionSubsteps = 3;
+        [SerializeField] private bool useLookupTable = true;
+        [SerializeField] private int frictionLookupResolution = 100;
+        [SerializeField] private bool useAdaptiveSubsteps = false;
+        [SerializeField] private int minSubsteps = 1;
+        [SerializeField] private int maxSubsteps = 10;
+        
 
         [Header("Ground Detection")] [SerializeField]
         public LayerMask groundLayer = ~0;
+        
+
+        [Header("Visual Sync")] [SerializeField]
+        private int syncInterval = 10;
+
+        [SerializeField] private float changeThreshold = 0.01f;
+        [SerializeField] private bool interpolateRemote = true;
+
+
 
         private GroundDetection _groundDetection;
         private WheelHit _wheelHit;
         private bool _isGrounded;
-        private bool _initialized;
+        
 
         private float _springLength;
         private float _prevSpringLength;
@@ -34,58 +89,41 @@ namespace Game.Vehicle.Wheel
         private float _springForce;
         private float _damperForce;
         private float _load;
-        private float _dt;
-        private Vector3 _frictionForce;
-
         
-        [Header("Torque")] [SerializeField] public float motorTorque = 0f;
-        [SerializeField] public float brakeTorque;
-        [SerializeField] public float wheelMass = 20f;
-        [SerializeField] private float rollingResistanceTorque = 30f;
-
         private float _angularVelocity;
         private float _inertia;
+        
 
-        [Header("Steering")] [SerializeField] private float steerAngle;
-
+        private Quaternion _steerRotation;
         private Vector3 _suspensionUp;
         private Vector3 _suspensionForward;
         private Vector3 _suspensionRight;
-
         private Vector3 _wheelUp;
         private Vector3 _wheelForward;
         private Vector3 _wheelRight;
+        
 
-        [Header("Friction Settings")] [SerializeField]
-        private FrictionPreset activeFrictionPreset;
-
-        [SerializeField] private Friction forwardFriction;
-        [SerializeField] private Friction sideFriction;
-
-        [SerializeField] private float loadRating = 5400f;
-
-        [Range(0, 1)] [SerializeField] private float frictionCircleStrength = 1f;
-
-        [Range(1f, 5f)] [SerializeField] private float frictionCirclePower = 3f;
-
-        [SerializeField] private int frictionSubsteps = 3;
-        [SerializeField] private bool useLookupTable = true;
-        [SerializeField] private int frictionLookupResolution = 100;
-
-        [SerializeField] private bool useAdaptiveSubsteps = false;
-        [SerializeField] private int minSubsteps = 1;
-        [SerializeField] private int maxSubsteps = 10;
-
+        private Vector3 _frictionForce;
         private float[] _frictionLookupTable;
         private bool _lowSpeedReferenceIsSet;
         private Vector3 _lowSpeedReferencePosition;
         private bool _wakeOneFrame;
+        
 
-        [Header("Visual")] [SerializeField] private Transform visualTransform;
         private float _visualRotationAngle;
+        private float _smoothedAngularVelocity;
+        private float _smoothedSpringLength;
+        
 
-        private Quaternion _steerRotation;
+        private NetworkVariable<WheelVisualData> _visualData = new NetworkVariable<WheelVisualData>(
+            writePerm: NetworkVariableWritePermission.Owner);
 
+        private int _syncCounter;
+        
+
+        private float _dt;
+        private bool _initialized;
+        
 
         private void Awake()
         {
@@ -98,20 +136,55 @@ namespace Game.Vehicle.Wheel
             Initialize();
         }
 
+        private void FixedUpdate()
+        {
+            if (!HasAuthority || !_initialized)
+                return;
+
+            _dt = Time.fixedDeltaTime;
+
+            UpdateSteeringTransform();
+            UpdateGroundDetection();
+            UpdateSuspension();
+            ApplySuspensionForce();
+            UpdateWheelSpaceVectors();
+            UpdateFriction();
+            ApplyFrictionForces();
+            CheckSync();
+        }
+
+        private void LateUpdate()
+        {
+            UpdateVisual();
+        }
+        
+
         public void Initialize()
+        {
+            InitializeGroundDetection();
+            InitializeInertia();
+            InitializeFrictionLookupTable();
+            _initialized = true;
+        }
+
+        private void InitializeGroundDetection()
         {
             _groundDetection = GetComponent<GroundDetection>();
             if (_groundDetection == null)
                 _groundDetection = gameObject.AddComponent<GroundDetection>();
+        }
 
+        private void InitializeInertia()
+        {
             _inertia = wheelMass * radius * radius;
+        }
 
+        private void InitializeFrictionLookupTable()
+        {
             if (useLookupTable && activeFrictionPreset != null)
             {
                 BuildFrictionLookupTable();
             }
-
-            _initialized = true;
         }
 
         private void BuildFrictionLookupTable()
@@ -123,113 +196,23 @@ namespace Game.Vehicle.Wheel
                 _frictionLookupTable[i] = activeFrictionPreset.Curve.Evaluate(t);
             }
         }
-
-        private float EvaluateFrictionFast(float slip)
-        {
-            float t = Mathf.Clamp01(slip) * frictionLookupResolution;
-            int index = (int)t;
-            float fraction = t - index;
-
-            if (index >= frictionLookupResolution)
-                return _frictionLookupTable[frictionLookupResolution];
-
-            return Mathf.Lerp(_frictionLookupTable[index],
-                _frictionLookupTable[index + 1],
-                fraction);
-        }
-
-        private int GetAdaptiveSubsteps(float speed)
-        {
-            if (speed > 6f)
-                return minSubsteps;
-            else
-                return maxSubsteps;
-        }
-
-        private void FixedUpdate()
-        {
-            _dt = Time.fixedDeltaTime;
-            if (!_initialized)
-                return;
-
-            UpdateSteeringTransform();
-            UpdateGroundDetection();
-            UpdateSuspension();
-            ApplySuspensionForce();
-            UpdateWheelSpaceVectors();
-            UpdateFriction();
-            ApplyFrictionForces();
-        }
-
-        private void LateUpdate()
-        {
-            UpdateVisual();
-        }
+        
 
         private void UpdateSteeringTransform()
         {
             _steerRotation = Quaternion.AngleAxis(steerAngle, transform.up);
-
             _suspensionUp = transform.up;
             _suspensionForward = _steerRotation * transform.forward;
             _suspensionRight = _steerRotation * transform.right;
         }
 
-        private void UpdateSuspension()
+        private void UpdateWheelSpaceVectors()
         {
-            _prevSpringLength = _springLength;
-
-            if (_isGrounded)
-            {
-                Vector3 localHitPoint = Quaternion.Inverse(_steerRotation) *
-                                        transform.InverseTransformPoint(_wheelHit.point);
-
-                float hitAngle = Mathf.Asin(Mathf.Clamp(localHitPoint.z / radius, -1f, 1f));
-                float localGroundY = localHitPoint.y + radius * Mathf.Cos(hitAngle);
-
-                float targetLength = Mathf.Clamp(-localGroundY, 0f, springMaxLength);
-                _springLength = targetLength;
-            }
-            else
-            {
-                float extensionSpeed = 6f * _dt;
-                _springLength = Mathf.MoveTowards(_springLength, springMaxLength, extensionSpeed);
-            }
-
-            _springCompressionVelocity = (_prevSpringLength - _springLength) / _dt;
-            _springCompression = springMaxLength > 0
-                ? (springMaxLength - _springLength) / springMaxLength
-                : 0f;
-
-            if (_isGrounded)
-            {
-                _springForce = springMaxForce * springForceCurve.Evaluate(_springCompression);
-                _damperForce = CalculateDamperForce(_springCompressionVelocity);
-                _load = Mathf.Max(0f, _springForce + _damperForce);
-            }
-            else
-            {
-                _springForce = 0f;
-                _damperForce = 0f;
-                _load = 0f;
-            }
+            _wheelUp = _suspensionUp;
+            _wheelForward = _suspensionForward;
+            _wheelRight = _suspensionRight;
         }
-
-        private float CalculateDamperForce(float velocity)
-        {
-            return velocity > 0
-                ? damperBumpRate * velocity
-                : damperReboundRate * velocity;
-        }
-
-        private void ApplySuspensionForce()
-        {
-            if (!_isGrounded) return;
-
-            Vector3 suspensionForce = _wheelHit.normal * _load;
-            Vector3 suspensionPosition = transform.position;
-            targetRigidbody.AddForceAtPosition(suspensionForce, suspensionPosition);
-        }
+        
 
         private void UpdateGroundDetection()
         {
@@ -247,125 +230,261 @@ namespace Game.Vehicle.Wheel
                 groundLayer
             );
         }
+        
 
-        private void UpdateWheelSpaceVectors()
+        private void UpdateSuspension()
         {
-            _wheelUp = _suspensionUp;
-            _wheelForward = _suspensionForward;
-            _wheelRight = _suspensionRight;
+            _prevSpringLength = _springLength;
+
+            if (_isGrounded)
+            {
+                UpdateGroundedSpringLength();
+            }
+            else
+            {
+                UpdateAirborneSpringLength();
+            }
+
+            CalculateSuspensionForces();
         }
+
+        private void UpdateGroundedSpringLength()
+        {
+            Vector3 localHitPoint = Quaternion.Inverse(_steerRotation) *
+                                    transform.InverseTransformPoint(_wheelHit.point);
+
+            float hitAngle = Mathf.Asin(Mathf.Clamp(localHitPoint.z / radius, -1f, 1f));
+            float localGroundY = localHitPoint.y + radius * Mathf.Cos(hitAngle);
+            _springLength = Mathf.Clamp(-localGroundY, 0f, springMaxLength);
+        }
+
+        private void UpdateAirborneSpringLength()
+        {
+            float extensionSpeed = SPRING_EXTENSION_SPEED * _dt;
+            _springLength = Mathf.MoveTowards(_springLength, springMaxLength, extensionSpeed);
+        }
+
+        private void CalculateSuspensionForces()
+        {
+            _springCompressionVelocity = (_prevSpringLength - _springLength) / _dt;
+            _springCompression = springMaxLength > 0
+                ? (springMaxLength - _springLength) / springMaxLength
+                : 0f;
+
+            if (_isGrounded)
+            {
+                _springForce = springMaxForce * springForceCurve.Evaluate(_springCompression);
+                _damperForce = CalculateDamperForce(_springCompressionVelocity);
+                _load = Mathf.Max(0f, _springForce + _damperForce);
+            }
+            else
+            {
+                ResetSuspensionForces();
+            }
+        }
+
+        private void ResetSuspensionForces()
+        {
+            _springForce = 0f;
+            _damperForce = 0f;
+            _load = 0f;
+        }
+
+        private float CalculateDamperForce(float velocity)
+        {
+            return velocity > 0
+                ? damperBumpRate * velocity
+                : damperReboundRate * velocity;
+        }
+
+        private void ApplySuspensionForce()
+        {
+            if (!_isGrounded) return;
+
+            Vector3 suspensionForce = _wheelHit.normal * _load;
+            targetRigidbody.AddForceAtPosition(suspensionForce, transform.position);
+        }
+
+
 
         private void UpdateFriction()
         {
             if (!_isGrounded)
             {
-                forwardFriction.force = 0;
-                forwardFriction.slip = 0;
-                sideFriction.force = 0f;
-                sideFriction.slip = 0f;
-                _frictionForce = Vector3.zero;
-                _angularVelocity = 0f;
+                ResetFrictionWhenAirborne();
                 return;
             }
 
+            CalculateLoadDistribution(out float lngLoadClamped, out float latLoadClamped);
+            Vector3 contactVelocity = CalculateContactVelocity();
+            CalculateFrictionSpeeds(contactVelocity);
+
+            float clampedAbsForwardSpeed = GetClampedForwardSpeed();
+            float peakForwardFrictionForce = activeFrictionPreset.BCDE.z * lngLoadClamped;
+            float peakSideFrictionForce = activeFrictionPreset.BCDE.z * latLoadClamped;
+
+            UpdateLongitudinalFriction(clampedAbsForwardSpeed, lngLoadClamped, peakForwardFrictionForce);
+            UpdateLateralFriction(clampedAbsForwardSpeed, latLoadClamped, peakSideFrictionForce);
+            ApplyLowSpeedStabilization(clampedAbsForwardSpeed, peakForwardFrictionForce, peakSideFrictionForce);
+            ApplyFrictionCircle();
+            _frictionForce = _wheelRight * sideFriction.force + _wheelForward * forwardFriction.force;
+
+            if (_wakeOneFrame)
+                _wakeOneFrame = false;
+        }
+
+        private void ResetFrictionWhenAirborne()
+        {
+            forwardFriction.force = 0;
+            forwardFriction.slip = 0;
+            sideFriction.force = 0f;
+            sideFriction.slip = 0f;
+            _frictionForce = Vector3.zero;
+            _angularVelocity = 0f;
+        }
+
+        private void CalculateLoadDistribution(out float lngLoadClamped, out float latLoadClamped)
+        {
             float lngLoad = _load * forwardFriction.loadFactor;
             float latLoad = _load * sideFriction.loadFactor;
 
-            float lngLoadClamped = Mathf.Pow(Mathf.Clamp01(lngLoad / loadRating), 0.5f)
-                                   * loadRating * forwardFriction.loadFactor;
-            float latLoadClamped = Mathf.Pow(Mathf.Clamp01(latLoad / loadRating), 0.5f)
-                                   * loadRating * sideFriction.loadFactor;
+            lngLoadClamped = Mathf.Pow(Mathf.Clamp01(lngLoad / loadRating), 0.5f)
+                             * loadRating * forwardFriction.loadFactor;
+            latLoadClamped = Mathf.Pow(Mathf.Clamp01(latLoad / loadRating), 0.5f)
+                             * loadRating * sideFriction.loadFactor;
+        }
 
+        private Vector3 CalculateContactVelocity()
+        {
             Vector3 contactVelocity = targetRigidbody.GetPointVelocity(_wheelHit.point);
+
             if (_wheelHit.collider.attachedRigidbody != null)
             {
                 contactVelocity -= _wheelHit.collider.attachedRigidbody.GetPointVelocity(_wheelHit.point);
             }
 
+            return contactVelocity;
+        }
+
+        private void CalculateFrictionSpeeds(Vector3 contactVelocity)
+        {
             forwardFriction.speed = Vector3.Dot(contactVelocity, _wheelForward);
             sideFriction.speed = Vector3.Dot(contactVelocity, _wheelRight);
+        }
 
+        private float GetClampedForwardSpeed()
+        {
             float absForwardSpeed = Mathf.Abs(forwardFriction.speed);
-            float absSideSpeed = Mathf.Abs(sideFriction.speed);
-            float forwardSpeedClamp = 1.5f * (_dt / 0.005f);
-            forwardSpeedClamp = Mathf.Clamp(forwardSpeedClamp, 1.5f, 10f);
-            float clampedAbsForwardSpeed = Mathf.Max(absForwardSpeed, forwardSpeedClamp);
-            float invClampedAbsForwardSpeed = 1.0f / clampedAbsForwardSpeed;
+            float forwardSpeedClamp = FORWARD_SPEED_BASE_CLAMP * (_dt / 0.005f);
+            forwardSpeedClamp = Mathf.Clamp(forwardSpeedClamp, FORWARD_SPEED_MIN_CLAMP, FORWARD_SPEED_MAX_CLAMP);
+            return Mathf.Max(absForwardSpeed, forwardSpeedClamp);
+        }
 
-            // LONGITUDINAL FRICTION
-            float peakForwardFrictionForce = activeFrictionPreset.BCDE.z * lngLoadClamped;
-            float combinedBrakeTorque = brakeTorque + rollingResistanceTorque;
-            int dynamicSubsteps = useAdaptiveSubsteps ? GetAdaptiveSubsteps(clampedAbsForwardSpeed) : frictionSubsteps;
+        private void UpdateLongitudinalFriction(float clampedAbsForwardSpeed, float lngLoadClamped, float peakForce)
+        {
+            int dynamicSubsteps = useAdaptiveSubsteps
+                ? GetAdaptiveSubsteps(clampedAbsForwardSpeed)
+                : frictionSubsteps;
+
             float invSubsteps = 1.0f / dynamicSubsteps;
             float sdt = _dt * invSubsteps;
             float invInertia = 1.0f / _inertia;
+            float invClampedAbsForwardSpeed = 1.0f / clampedAbsForwardSpeed;
             float lngFrictionForceSum = 0.0f;
-            float totalWheelTorque = 0.0f;
+            float combinedBrakeTorque = brakeTorque + rollingResistanceTorque;
 
             for (int substep = 0; substep < dynamicSubsteps; substep++)
             {
                 float stepMotorTorque = motorTorque * sdt;
                 _angularVelocity += stepMotorTorque * invInertia;
-                totalWheelTorque += stepMotorTorque;
 
-                if (_isGrounded)
-                {
-                    float slipValue = -(_angularVelocity * radius - forwardFriction.speed)
-                                      * invClampedAbsForwardSpeed * forwardFriction.stiffness;
+                float slipValue = -(_angularVelocity * radius - forwardFriction.speed)
+                                  * invClampedAbsForwardSpeed * forwardFriction.stiffness;
 
-                    float absSlip = slipValue < 0 ? -slipValue : slipValue;
-                    float slipSign = slipValue >= 0.0f ? 1.0f : -1.0f;
-                    float frictionCoeff = useLookupTable && _frictionLookupTable != null
-                        ? EvaluateFrictionFast(absSlip)
-                        : activeFrictionPreset.Curve.Evaluate(absSlip);
+                float absSlip = Mathf.Abs(slipValue);
+                float slipSign = slipValue >= 0.0f ? 1.0f : -1.0f;
 
-                    float frictionForce = -slipSign * frictionCoeff * lngLoadClamped;
-                    if (frictionForce > peakForwardFrictionForce)
-                        frictionForce = peakForwardFrictionForce;
-                    else if (frictionForce < -peakForwardFrictionForce)
-                        frictionForce = -peakForwardFrictionForce;
+                float frictionCoeff = EvaluateFrictionCoefficient(absSlip);
+                float frictionForce = Mathf.Clamp(-slipSign * frictionCoeff * lngLoadClamped, -peakForce, peakForce);
 
-                    float stepFrictionTorque = frictionForce * radius * sdt;
-                    _angularVelocity -= stepFrictionTorque * invInertia;
-                    totalWheelTorque += stepFrictionTorque;
-                    lngFrictionForceSum += frictionForce * invSubsteps;
-                }
+                float stepFrictionTorque = frictionForce * radius * sdt;
+                _angularVelocity -= stepFrictionTorque * invInertia;
+                lngFrictionForceSum += frictionForce * invSubsteps;
 
                 if (combinedBrakeTorque > 0.0f)
                 {
-                    float angVelSign = _angularVelocity >= 0.0f ? 1.0f : -1.0f;
-                    float stepBrakeTorque = angVelSign * combinedBrakeTorque * sdt;
-                    float newAngVel = _angularVelocity - stepBrakeTorque * invInertia;
-                    _angularVelocity = ((newAngVel >= 0.0f) != (angVelSign >= 0.0f)) ? 0.0f : newAngVel;
-                    totalWheelTorque -= stepBrakeTorque;
+                    ApplyBrakeTorque(combinedBrakeTorque, sdt, invInertia);
                 }
             }
 
             forwardFriction.force = lngFrictionForceSum;
-            forwardFriction.slip = -(_angularVelocity * radius - forwardFriction.speed)
-                                   * invClampedAbsForwardSpeed * forwardFriction.stiffness;
-            forwardFriction.slip = Mathf.Clamp(forwardFriction.slip, -1.0f, 1.0f);
+            forwardFriction.slip = Mathf.Clamp(
+                -(_angularVelocity * radius - forwardFriction.speed) * invClampedAbsForwardSpeed *
+                forwardFriction.stiffness,
+                -1.0f,
+                1.0f
+            );
+        }
 
-            //LATERAL FRICTION
+        private float EvaluateFrictionCoefficient(float absSlip)
+        {
+            if (useLookupTable && _frictionLookupTable != null)
+            {
+                return EvaluateFrictionFast(absSlip);
+            }
+
+            return activeFrictionPreset.Curve.Evaluate(absSlip);
+        }
+
+        private float EvaluateFrictionFast(float slip)
+        {
+            float t = Mathf.Clamp01(slip) * frictionLookupResolution;
+            int index = (int)t;
+            float fraction = t - index;
+
+            if (index >= frictionLookupResolution)
+                return _frictionLookupTable[frictionLookupResolution];
+
+            return Mathf.Lerp(_frictionLookupTable[index], _frictionLookupTable[index + 1], fraction);
+        }
+
+        private void ApplyBrakeTorque(float combinedBrakeTorque, float sdt, float invInertia)
+        {
+            float angVelSign = _angularVelocity >= 0.0f ? 1.0f : -1.0f;
+            float stepBrakeTorque = angVelSign * combinedBrakeTorque * sdt;
+            float newAngVel = _angularVelocity - stepBrakeTorque * invInertia;
+
+            _angularVelocity = ((newAngVel >= 0.0f) != (angVelSign >= 0.0f)) ? 0.0f : newAngVel;
+        }
+
+        private void UpdateLateralFriction(float clampedAbsForwardSpeed, float latLoadClamped, float peakForce)
+        {
             sideFriction.slip = (Mathf.Atan2(sideFriction.speed, clampedAbsForwardSpeed) * Mathf.Rad2Deg)
-                                * 0.01111f * sideFriction.stiffness;
+                                * SLIP_ANGLE_CONVERSION * sideFriction.stiffness;
 
             float sideSlipSign = sideFriction.slip < 0f ? -1f : 1f;
             float absSideSlip = Mathf.Abs(sideFriction.slip);
-            float peakSideFrictionForce = activeFrictionPreset.BCDE.z * latLoadClamped;
 
-            float sideMu = useLookupTable && _frictionLookupTable != null
-                ? EvaluateFrictionFast(absSideSlip)
-                : activeFrictionPreset.Curve.Evaluate(absSideSlip);
+            float sideMu = EvaluateFrictionCoefficient(absSideSlip);
+            sideFriction.force = Mathf.Clamp(
+                -sideSlipSign * sideMu * latLoadClamped,
+                -peakForce,
+                peakForce
+            );
+        }
 
-            sideFriction.force = -sideSlipSign * sideMu * latLoadClamped;
-            bool isLowSpeed = absForwardSpeed < 0.12f && absSideSpeed < 0.12f;
-            bool noInputTorque = Mathf.Abs(motorTorque) < 0.1f && Mathf.Abs(brakeTorque) < 0.1f;
+        private void ApplyLowSpeedStabilization(float clampedAbsForwardSpeed, float peakForwardForce,
+            float peakSideForce)
+        {
+            float absForwardSpeed = Mathf.Abs(forwardFriction.speed);
+            float absSideSpeed = Mathf.Abs(sideFriction.speed);
+            bool isLowSpeed = absForwardSpeed < LOW_SPEED_THRESHOLD && absSideSpeed < LOW_SPEED_THRESHOLD;
+            bool noInputTorque = Mathf.Abs(motorTorque) < MIN_TORQUE_THRESHOLD &&
+                                 Mathf.Abs(brakeTorque) < MIN_TORQUE_THRESHOLD;
 
             if (_isGrounded && !_wakeOneFrame && isLowSpeed && noInputTorque)
             {
-                float verticalOffset = _springLength + radius;
-                Vector3 currentPosition = transform.position - _suspensionUp * verticalOffset;
+                Vector3 currentPosition = transform.position - _suspensionUp * (_springLength + radius);
 
                 if (!_lowSpeedReferenceIsSet)
                 {
@@ -375,9 +494,9 @@ namespace Game.Vehicle.Wheel
                 else
                 {
                     Vector3 referenceError = _lowSpeedReferencePosition - currentPosition;
-                    float invDt = 1f / _dt;
-                    Vector3 correctiveForce = invDt * _load * referenceError;
-                    if (Mathf.Abs(_angularVelocity) < 0.5f)
+                    Vector3 correctiveForce = (1f / _dt) * _load * referenceError;
+
+                    if (Mathf.Abs(_angularVelocity) < ANGULAR_VELOCITY_LOCK_THRESHOLD)
                     {
                         float forwardCorrection = Vector3.Dot(correctiveForce, _wheelForward);
                         forwardFriction.force += forwardCorrection;
@@ -392,52 +511,134 @@ namespace Game.Vehicle.Wheel
                 _lowSpeedReferenceIsSet = false;
             }
 
-            if (forwardFriction.force > peakForwardFrictionForce)
-                forwardFriction.force = peakForwardFrictionForce;
-            else if (forwardFriction.force < -peakForwardFrictionForce)
-                forwardFriction.force = -peakForwardFrictionForce;
+            forwardFriction.force = Mathf.Clamp(forwardFriction.force, -peakForwardForce, peakForwardForce);
+            sideFriction.force = Mathf.Clamp(sideFriction.force, -peakSideForce, peakSideForce);
+        }
 
-            if (sideFriction.force > peakSideFrictionForce)
-                sideFriction.force = peakSideFrictionForce;
-            else if (sideFriction.force < -peakSideFrictionForce)
-                sideFriction.force = -peakSideFrictionForce;
-
+        private void ApplyFrictionCircle()
+        {
             forwardFriction.force *= forwardFriction.grip;
             sideFriction.force *= sideFriction.grip;
+
             if (frictionCircleStrength > 0)
             {
-                float frictionCircleEffect = 1f - (Mathf.Pow(Mathf.Clamp01(Mathf.Abs(forwardFriction.slip)),
+                float frictionCircleEffect = 1f - (Mathf.Pow(
+                    Mathf.Clamp01(Mathf.Abs(forwardFriction.slip)),
                     frictionCirclePower) * frictionCircleStrength);
                 sideFriction.force *= frictionCircleEffect;
             }
-
-            _frictionForce = _wheelRight * sideFriction.force + _wheelForward * forwardFriction.force;
-            if (_wakeOneFrame) _wakeOneFrame = false;
         }
 
         private void ApplyFrictionForces()
         {
             if (!_isGrounded) return;
 
-            Vector3 forcePosition = _wheelHit.point + _suspensionUp * (0.8f * springMaxLength);
+            Vector3 forcePosition = _wheelHit.point + _suspensionUp * (FORCE_POSITION_OFFSET_FACTOR * springMaxLength);
             targetRigidbody.AddForceAtPosition(_frictionForce, forcePosition);
         }
+
+        private int GetAdaptiveSubsteps(float speed)
+        {
+            return speed > 6f ? minSubsteps : maxSubsteps;
+        }
+        
+
+        private void CheckSync()
+        {
+            _syncCounter++;
+            if (_syncCounter >= syncInterval)
+            {
+                _syncCounter = 0;
+                SyncVisualData();
+            }
+        }
+
+        private void SyncVisualData()
+        {
+            var data = new WheelVisualData();
+
+            if (Mathf.Abs(_angularVelocity - _visualData.Value.GetAngularVelocity()) > changeThreshold)
+                data.SetAngularVelocity(_angularVelocity);
+
+            if (Mathf.Abs(_springLength - _visualData.Value.GetSpringLength()) > 0.01f)
+                data.SetSpringLength(_springLength);
+
+            if (Mathf.Abs(steerAngle - _visualData.Value.GetSteerAngle()) > 0.5f)
+                data.SetSteerAngle(steerAngle);
+
+            if (_isGrounded != _visualData.Value.GetIsGrounded())
+                data.SetIsGrounded(_isGrounded);
+
+            if (data.Flags != 0)
+                _visualData.Value = data;
+        }
+
 
         private void UpdateVisual()
         {
             if (visualTransform == null) return;
 
-            Vector3 wheelPosition = transform.position - _suspensionUp * _springLength;
+            float angularVel, springLen, steerAng;
 
-            _visualRotationAngle += _angularVelocity * Mathf.Rad2Deg * Time.deltaTime;
+            if (HasAuthority)
+            {
+                GetAuthorityVisualData(out angularVel, out springLen, out steerAng);
+            }
+            else
+            {
+                GetRemoteVisualData(out angularVel, out springLen, out steerAng);
+            }
+
+            ApplyVisualTransform(angularVel, springLen, steerAng);
+        }
+
+        private void GetAuthorityVisualData(out float angularVel, out float springLen, out float steerAng)
+        {
+            angularVel = _angularVelocity;
+            springLen = _springLength;
+            steerAng = steerAngle;
+        }
+
+        private void GetRemoteVisualData(out float angularVel, out float springLen, out float steerAng)
+        {
+            if (interpolateRemote)
+            {
+                _smoothedAngularVelocity = Mathf.Lerp(
+                    _smoothedAngularVelocity,
+                    _visualData.Value.GetAngularVelocity(),
+                    Time.deltaTime * ANGULAR_VEL_SMOOTHING);
+
+                _smoothedSpringLength = Mathf.Lerp(
+                    _smoothedSpringLength,
+                    _visualData.Value.GetSpringLength(),
+                    Time.deltaTime * SPRING_LENGTH_SMOOTHING);
+
+                angularVel = _smoothedAngularVelocity;
+                springLen = _smoothedSpringLength;
+            }
+            else
+            {
+                angularVel = _visualData.Value.GetAngularVelocity();
+                springLen = _visualData.Value.GetSpringLength();
+            }
+
+            steerAng = _visualData.Value.GetSteerAngle();
+        }
+
+        private void ApplyVisualTransform(float angularVel, float springLen, float steerAng)
+        {
+            Vector3 wheelPosition = transform.position - transform.up * springLen;
+
+            _visualRotationAngle += angularVel * Mathf.Rad2Deg * Time.deltaTime;
             _visualRotationAngle %= 360f;
 
-            Quaternion steerYaw = Quaternion.AngleAxis(steerAngle, transform.up);
+            Quaternion steerYaw = Quaternion.AngleAxis(steerAng, transform.up);
             Quaternion rollRotation = Quaternion.AngleAxis(_visualRotationAngle, Vector3.right);
             Quaternion finalRotation = transform.rotation * steerYaw * rollRotation;
 
             visualTransform.SetPositionAndRotation(wheelPosition, finalRotation);
         }
+        
 
         public void SetSteerAngle(float angle)
         {
@@ -450,16 +651,27 @@ namespace Game.Vehicle.Wheel
             _lowSpeedReferenceIsSet = false;
         }
 
+
         private void OnDrawGizmos()
         {
             if (!Application.isPlaying) return;
 
+            DrawWheelGizmo();
+            DrawDirectionGizmo(); // ← Burada çağrılıyor
+        }
+
+        private void DrawWheelGizmo()
+        {
             Gizmos.color = _isGrounded ? Color.green : Color.red;
             Vector3 wheelPos = transform.position - _suspensionUp * _springLength;
             Gizmos.DrawWireSphere(wheelPos, radius);
+        }
 
+        private void DrawDirectionGizmo()
+        {
             Gizmos.color = Color.cyan;
             Gizmos.DrawRay(transform.position, _suspensionForward * 0.5f);
         }
     }
 }
+        

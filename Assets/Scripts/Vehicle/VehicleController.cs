@@ -1,10 +1,9 @@
 using UnityEngine;
-using Game.Input;
-using Game.Vehicle.Wheel; // SENİN GameInput wrapper’ın
+using Game.Vehicle.Wheel;
 
 namespace Game.Vehicle
 {
-    public class CarController : MonoBehaviour
+    class VehicleController : MonoBehaviour
     {
         [Header("References")]
         public Rigidbody rb;
@@ -37,12 +36,7 @@ namespace Game.Vehicle
             if (rb == null)
                 rb = GetComponent<Rigidbody>();
         }
-
-        void Update()
-        {
-            _moveInput = GameInput.Actions.Player.Move.ReadValue<Vector2>();
-            _handbrakeInput = GameInput.Actions.Player.Jump.ReadValue<float>() > 0.1f;
-        }
+    
 
         void FixedUpdate()
         {

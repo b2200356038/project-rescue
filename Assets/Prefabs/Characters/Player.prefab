@@ -124,11 +124,12 @@ GameObject:
   - component: {fileID: 378099091213283077}
   - component: {fileID: 2864305741433477372}
   - component: {fileID: 4745766379562620470}
-  - component: {fileID: 8167933289879102779}
   - component: {fileID: 4710238820213277529}
   - component: {fileID: 4903152183366241606}
-  - component: {fileID: 2944192808106327396}
   - component: {fileID: -8800490414928492429}
+  - component: {fileID: 3787903477128008041}
+  - component: {fileID: -7566539625288415708}
+  - component: {fileID: 5091335788809178483}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -185,7 +186,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5478015027486214707}
   serializedVersion: 5
-  m_Mass: 10
+  m_Mass: 70
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -201,53 +202,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 1
-  m_Interpolate: 1
-  m_Constraints: 80
+  m_Interpolate: 0
+  m_Constraints: 112
   m_CollisionDetection: 2
---- !u!114 &8167933289879102779
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5478015027486214707}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16df0442676cab44fbffc1ca05c335b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerTransform
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkTransformExpanded: 1
-  AuthorityMode: 1
-  TickSyncChildren: 0
-  UseUnreliableDeltas: 0
-  SyncPositionX: 1
-  SyncPositionY: 1
-  SyncPositionZ: 1
-  SyncRotAngleX: 0
-  SyncRotAngleY: 1
-  SyncRotAngleZ: 0
-  SyncScaleX: 0
-  SyncScaleY: 0
-  SyncScaleZ: 0
-  PositionThreshold: 0.001
-  RotAngleThreshold: 0.01
-  ScaleThreshold: 0.01
-  UseQuaternionSynchronization: 0
-  UseQuaternionCompression: 0
-  UseHalfFloatPrecision: 0
-  InLocalSpace: 0
-  SwitchTransformSpaceWhenParented: 0
-  Interpolate: 1
-  SlerpPosition: 0
-  collisionType: 1
-  collisionDamage: 0
-  childColliders:
-  - {fileID: 7278303531120423641}
-  maxAngularVelocity: 10
-  maxVelocity: 10
-  playerInput: {fileID: 4903152183366241606}
-  physicsPlayerController: {fileID: 4710238820213277529}
 --- !u!114 &4710238820213277529
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,10 +246,65 @@ MonoBehaviour:
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
-  m_DefaultActionMap: Player
+  m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &2944192808106327396
+--- !u!114 &-8800490414928492429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478015027486214707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2665c3adc460daf4fbe375af02981eb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Services::Services.Vivox3DPositioning
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3787903477128008041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5478015027486214707}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 485741770b3cda6458422d6d59b12d54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Physics::Game.Physics.PhysicsObjectMotion
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AuthorityMode: 1
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 0
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 0
+  SyncScaleX: 0
+  SyncScaleY: 0
+  SyncScaleZ: 0
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
+  collisionType: 1
+  collisionDamage: 0
+  childColliders:
+  - {fileID: 7278303531120423641}
+  maxAngularVelocity: 30
+  maxVelocity: 30
+--- !u!114 &-7566539625288415708
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -309,7 +321,7 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
---- !u!114 &-8800490414928492429
+--- !u!114 &5091335788809178483
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -318,7 +330,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 5478015027486214707}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2665c3adc460daf4fbe375af02981eb2, type: 3}
+  m_Script: {fileID: 11500000, guid: 58c4a8dc1f24f384d8467512731bc1d4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Services::Services.Vivox3DPositioning
+  m_EditorClassIdentifier: Game.Player::Game.Player.PlayerStateMachine
   ShowTopMostFoldoutHeaderGroup: 1
+  rb: {fileID: 4745766379562620470}
+  physicsPlayerController: {fileID: 4710238820213277529}
+  playerInput: {fileID: 4903152183366241606}

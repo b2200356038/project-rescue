@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e86e252d81db9ce479edb03283460f1d, type: 3}
   m_Name: PhysicsPlayerControllerSettings
   m_EditorClassIdentifier: Assembly-CSharp::Physics.PhysicsPlayerControllerSettings
-  WalkSpeed: 30
-  SprintSpeed: 50
+  WalkSpeed: 50
+  SprintSpeed: 100
   Acceleration: 50
   DragCoefficient: 3
   AirControlFactor: 1
-  JumpImpusle: 80
+  JumpImpusle: 400
   CustomGravityMultiplier: 2
   RotationSpeed: 13
   GroundCheckDistance: 1.1

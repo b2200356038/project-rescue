@@ -5,7 +5,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "FrictionPreset", menuName = "Vehicle/Friction Preset", order = 1)]
 public class FrictionPreset : ScriptableObject
 {
-    [Tooltip("Pacejka Magic Formula parameters: B, C, D, E")]
     public Vector4 BCDE = new Vector4(10f, 1.9f, 1f, 0.97f);
 
     [SerializeField]

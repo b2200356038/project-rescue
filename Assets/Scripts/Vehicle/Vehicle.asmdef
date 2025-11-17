@@ -1,14 +1,13 @@
 {
-    "name": "Game.Editor",
+    "name": "Game.Vehicle",
     "rootNamespace": "Game",
     "references": [
+        "GUID:1256cdc0432ebf1428e7295513782443",
+        "GUID:1491147abca9d7d4bb7105af628b223e",
         "GUID:df171376ba1ef084abcb818d5494f726",
-        "GUID:4107eb7d871d3a145a6f38e6ad706812",
-        "GUID:a3f321365a1367c4f8fb1a8020701a23"
+        "GUID:75469ad4d38634e559750d17036d5f7c"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

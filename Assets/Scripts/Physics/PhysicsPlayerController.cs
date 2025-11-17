@@ -38,7 +38,7 @@ namespace Game.Physics
         }
 
         private bool IsGrounded()
-        {
+        { 
             _ray.origin = rb.worldCenterOfMass;
             _ray.direction = Vector3.down;
             return UnityEngine.Physics.RaycastNonAlloc(_ray, _raycastHits,
@@ -105,9 +105,9 @@ namespace Game.Physics
             rb.AddForce(customGravity, ForceMode.Acceleration);
         }
 
-        public void SetMovement(Vector3 movement)
+        public void SetMovement(Vector2 moveInput)
         {
-            _movement = movement;
+            _movement = transform.forward * moveInput.y + transform.right * moveInput.x;
         }
 
         public void SetJump(bool jump)

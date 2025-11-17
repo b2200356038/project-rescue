@@ -5,8 +5,9 @@ namespace Game.Input
     {
         public static InputSystemManager Instance { get; private set; }
         
-        private AvatarActions.UIActions _uiInputs;
-        private AvatarActions.PlayerActions _gameplayInputs;
+        private GameActions.UIActions _uiInputs;
+        private GameActions.PlayerActions _gameplayInputs;
+        private GameActions.VehicleActions _vehicleActions;
 
         private void Awake()
         {
@@ -26,16 +27,26 @@ namespace Game.Input
         {
             _uiInputs = GameInput.Actions.UI;
             _gameplayInputs = GameInput.Actions.Player;
+            _vehicleActions = GameInput.Actions.Vehicle;
         }
 
         public void EnableUIInputs()
         {
+            _vehicleActions.Disable();
             _gameplayInputs.Disable();
             _uiInputs.Enable();
         }
-        public void EnableGameplayInputs()
+        public void EnableOnFootInputs()
         {
+            _vehicleActions.Disable();
             _gameplayInputs.Enable();
+            _uiInputs.Disable();
+        }
+
+        public void EnableVehicleInputs()
+        {
+            _vehicleActions.Enable();
+            _gameplayInputs.Disable();
             _uiInputs.Disable();
         }
     }

@@ -8,7 +8,6 @@ namespace Game.GameManagement
     {
         void Start()
         {
-            InputSystemManager.Instance.EnableGameplayInputs();
             GameplayEventHandler.OnReturnToMainMenuButtonPressed += GameplayEventHandler.LoadMainMenuScene;
             GameplayEventHandler.OnExitedSession += GameplayEventHandler.LoadMainMenuScene;
         }

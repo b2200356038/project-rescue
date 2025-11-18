@@ -1,15 +1,18 @@
 using UnityEngine;
 using Game.Vehicle.Wheel;
+using Unity.Netcode;
 
 namespace Game.Vehicle
 {
-    class VehicleController : MonoBehaviour
+    public class VehicleController : NetworkBehaviour
     {
         [Header("References")]
         public Rigidbody rb;
         public WheelController[] wheels;
-
         
+        [Header("Components")]
+        [SerializeField] private VehicleSeatManager seatManager;
+
         [Header("Drive Settings")]
         public float maxMotorTorque = 900f;
         public float maxBrakeTorque = 3000f;
@@ -29,23 +32,23 @@ namespace Game.Vehicle
 
         private float _smoothSteer;
         private float _steerVelocity;
-        private float _dt;
 
         void Awake()
         {
             if (rb == null)
                 rb = GetComponent<Rigidbody>();
+                
+            if (seatManager == null)
+                seatManager = GetComponent<VehicleSeatManager>();
         }
-    
 
-        void FixedUpdate()
+        public void OnFixedUpdate()
         {
-            _dt = Time.fixedDeltaTime;
-
+            if (!enabled) return;
             ApplySteer();
             ApplyMotorAndBrake();
         }
-        
+
         void ApplySteer()
         {
             float speed = rb.linearVelocity.magnitude;
@@ -63,7 +66,7 @@ namespace Game.Vehicle
             for (int i = 0; i < steerWheels.Length; i++)
                 wheels[steerWheels[i]].SetSteerAngle(finalAngle);
         }
-        
+
         void ApplyMotorAndBrake()
         {
             foreach (var w in wheels)
@@ -81,9 +84,31 @@ namespace Game.Vehicle
 
                 return;
             }
-            
+
             foreach (int id in driveWheels)
                 wheels[id].motorTorque = forwardInput * maxMotorTorque;
         }
+
+        public void SetMovement(Vector2 input)
+        {
+            _moveInput = input;
+        }
+
+        public void SetHandbrake(bool input)
+        {
+            _handbrakeInput = input;
+        }
+
+        public void ResetInputs()
+        {
+            _moveInput = Vector2.zero;
+            _handbrakeInput = false;
+        }
+        
+        public bool HasEmptySeats() => seatManager.HasEmptySeats();
+        public bool TryEnterVehicle(ulong clientId) => seatManager.TryEnterVehicle(clientId);
+        public void ExitVehicle(ulong clientId) => seatManager.ExitVehicle(clientId);
+        public Transform GetSeatTransform(ulong clientId) => seatManager.GetSeatTransform(clientId);
+        public Transform GetExitPoint() => seatManager.GetExitPoint();
     }
 }

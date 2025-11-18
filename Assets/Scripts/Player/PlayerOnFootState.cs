@@ -7,16 +7,16 @@ namespace Game.Player
 {
     public class PlayerOnFootState : PlayerStateBase
     {
-        private PhysicsPlayerController _physicsPlayerController;
+        private PlayerController _playerController;
         private PlayerInput _playerInput;
         private Rigidbody _rb;
         
         public override void OnEnter()
         {
-            _physicsPlayerController = StateMachine.physicsPlayerController;
+            _playerController = StateMachine.playerController;
             _playerInput = StateMachine.playerInput;
             _rb  = StateMachine.rb;
-            _physicsPlayerController.enabled = true;
+            _playerController.enabled = true;
             _playerInput.enabled=true;
             _rb.isKinematic = false;
             InputSystemManager.Instance.EnableOnFootInputs();
@@ -26,19 +26,19 @@ namespace Game.Player
         public override void OnNetworkUpdate()
         {
             var moveInput = GameInput.Actions.Player.Move.ReadValue<Vector2>();
-            _physicsPlayerController.SetMovement(moveInput);
+            _playerController.SetMovement(moveInput);
             var isSprinting = GameInput.Actions.Player.Sprint.ReadValue<float>() > 0f;
-            _physicsPlayerController.SetSprint(isSprinting);
+            _playerController.SetSprint(isSprinting);
         }
         
         void OnJumped(InputAction.CallbackContext _)
         {
-            _physicsPlayerController.SetJump(true);
+            _playerController.SetJump(true);
         }
 
         public override void OnNetworkFixedUpdate()
         {
-            _physicsPlayerController.OnFixedUpdate();
+            _playerController.OnFixedUpdate();
         }
 
         public override void OnExit()

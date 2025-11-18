@@ -1,13 +1,13 @@
 using System;
 using UnityEngine;
 
-namespace Game.Physics
+namespace Game.Player
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class PhysicsPlayerController : MonoBehaviour
+    public class PlayerController : MonoBehaviour
     {
         [SerializeField] private Rigidbody rb;
-        [SerializeField] private PhysicsPlayerControllerSettings physicsPlayerControllerSettings;
+        [SerializeField] private PlayerControllerSettings playerControllerSettings;
         public bool Grounded { get; private set; }
         private RaycastHit[] _raycastHits = new RaycastHit[1];
         private Ray _ray;
@@ -42,7 +42,7 @@ namespace Game.Physics
             _ray.origin = rb.worldCenterOfMass;
             _ray.direction = Vector3.down;
             return UnityEngine.Physics.RaycastNonAlloc(_ray, _raycastHits,
-                physicsPlayerControllerSettings.GroundCheckDistance) > 0;
+                playerControllerSettings.GroundCheckDistance) > 0;
         }
 
         private void ApplyMovement()
@@ -54,21 +54,21 @@ namespace Game.Physics
 
             var velocity = rb.linearVelocity;
             var desiredVelocity = _movement * (_sprint
-                ? physicsPlayerControllerSettings.SprintSpeed
-                : physicsPlayerControllerSettings.WalkSpeed);
+                ? playerControllerSettings.SprintSpeed
+                : playerControllerSettings.WalkSpeed);
 
             var targetVelocity = new Vector3(desiredVelocity.x, velocity.y, desiredVelocity.z);
             var velocityChange = targetVelocity - velocity;
 
             if (Grounded)
             {
-                var force = velocityChange * physicsPlayerControllerSettings.Acceleration;
+                var force = velocityChange * playerControllerSettings.Acceleration;
                 rb.AddForce(force, ForceMode.Force);
             }
             else
             {
-                var force = velocityChange * physicsPlayerControllerSettings.Acceleration *
-                            physicsPlayerControllerSettings.AirControlFactor;
+                var force = velocityChange * playerControllerSettings.Acceleration *
+                            playerControllerSettings.AirControlFactor;
                 rb.AddForce(force, ForceMode.Force);
             }
             
@@ -82,7 +82,7 @@ namespace Game.Physics
         {
             if (_jump && Grounded)
             {          
-                rb.AddForce(Vector3.up *physicsPlayerControllerSettings.JumpImpusle, ForceMode.Impulse);
+                rb.AddForce(Vector3.up *playerControllerSettings.JumpImpusle, ForceMode.Impulse);
                 PlayerJumped?.Invoke();
             }
             _jump = false;
@@ -94,14 +94,14 @@ namespace Game.Physics
             groundVelocity.y = 0f;
             if (groundVelocity.magnitude > 0f)
             {
-                var dragForce = -physicsPlayerControllerSettings.DragCoefficient * groundVelocity.magnitude * groundVelocity;
+                var dragForce = -playerControllerSettings.DragCoefficient * groundVelocity.magnitude * groundVelocity;
                 rb.AddForce(dragForce, ForceMode.Acceleration);
             }
         }
 
         private void ApplyCustomGravity()
         {
-            var customGravity = UnityEngine.Physics.gravity * (physicsPlayerControllerSettings.CustomGravityMultiplier - 1);
+            var customGravity = UnityEngine.Physics.gravity * (playerControllerSettings.CustomGravityMultiplier - 1);
             rb.AddForce(customGravity, ForceMode.Acceleration);
         }
 

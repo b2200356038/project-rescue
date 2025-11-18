@@ -1,15 +1,14 @@
-using System;
 using Game.Input;
 using Game.Physics;
 using Unity.Netcode.Components;
 using UnityEngine;
 
-namespace Player
+namespace Game.Player
 {
-    [RequireComponent(typeof(PhysicsPlayerController))]
+    [RequireComponent(typeof(PlayerController))]
     public class PlayerNetworkAnimator : NetworkAnimator
     {
-        [SerializeField] private PhysicsPlayerController physicsPlayerController;
+        [SerializeField] private PlayerController playerController;
 
         static readonly int GroundedId = Animator.StringToHash("Grounded");
         static readonly int MoveId = Animator.StringToHash("Move");
@@ -22,7 +21,7 @@ namespace Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            physicsPlayerController.PlayerJumped += OnPlayerJumped;
+            playerController.PlayerJumped += OnPlayerJumped;
         }
 
         private void OnPlayerJumped()
@@ -36,7 +35,7 @@ namespace Player
             {
                 return;
             }
-            Animator.SetBool(GroundedId, physicsPlayerController.Grounded);
+            Animator.SetBool(GroundedId, playerController.Grounded);
             var moveInput = GameInput.Actions.Player.Move.ReadValue<Vector2>();
             var isSprinting = GameInput.Actions.Player.Sprint.ReadValue<float>() > 0f;
             Animator.SetFloat(MoveId, moveInput.magnitude * (isSprinting ? 2f : 1f));

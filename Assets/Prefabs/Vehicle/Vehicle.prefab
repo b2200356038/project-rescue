@@ -2206,8 +2206,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.Wheel.WheelController
   targetRigidbody: {fileID: 5194048265131235105}
+  visualTransform: {fileID: 7328980923293919614}
   radius: 0.35
   width: 0.25
+  wheelMass: 20
   springMaxLength: 0.3
   springMaxForce: 8000
   springForceCurve:
@@ -2236,12 +2238,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   damperBumpRate: 2000
   damperReboundRate: 2000
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
   motorTorque: 0
   brakeTorque: 0
-  wheelMass: 20
   rollingResistanceTorque: 30
   steerAngle: 0
   activeFrictionPreset: {fileID: 11400000, guid: 7aa767731cc03e1438f1cb463adba4d1, type: 2}
@@ -2268,7 +2266,10 @@ MonoBehaviour:
   useAdaptiveSubsteps: 1
   minSubsteps: 3
   maxSubsteps: 25
-  visualTransform: {fileID: 7328980923293919614}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  interpolateRemote: 1
 --- !u!114 &2171905084112037447
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3420,8 +3421,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.Wheel.WheelController
   targetRigidbody: {fileID: 5194048265131235105}
+  visualTransform: {fileID: 4404172012527782495}
   radius: 0.35
   width: 0.25
+  wheelMass: 20
   springMaxLength: 0.3
   springMaxForce: 8000
   springForceCurve:
@@ -3450,12 +3453,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   damperBumpRate: 2000
   damperReboundRate: 2000
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
   motorTorque: 0
   brakeTorque: 0
-  wheelMass: 20
   rollingResistanceTorque: 30
   steerAngle: 0
   activeFrictionPreset: {fileID: 11400000, guid: 7aa767731cc03e1438f1cb463adba4d1, type: 2}
@@ -3482,7 +3481,10 @@ MonoBehaviour:
   useAdaptiveSubsteps: 1
   minSubsteps: 3
   maxSubsteps: 25
-  visualTransform: {fileID: 4404172012527782495}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  interpolateRemote: 1
 --- !u!114 &1524401536970056338
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4251,11 +4253,11 @@ GameObject:
   - component: {fileID: 8808879343168498625}
   - component: {fileID: 5194048265131235105}
   - component: {fileID: 4374968104691117499}
-  - component: {fileID: 2884394844081241962}
   - component: {fileID: -2888960937160310923}
-  - component: {fileID: -7209366474080410228}
+  - component: {fileID: 2884394844081241962}
   - component: {fileID: 3968503867146276620}
   - component: {fileID: 1564547742714879445}
+  - component: {fileID: 6580390671522172981}
   m_Layer: 0
   m_Name: Vehicle
   m_TagString: Untagged
@@ -4331,32 +4333,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 3}
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &2884394844081241962
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4221167466602670394}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ffc7fc3bbaf5e04e92bca28252a7378, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.SimpleCarController
-  rb: {fileID: 5194048265131235105}
-  wheels:
-  - {fileID: 6726947198567593842}
-  - {fileID: 1638875022003181330}
-  - {fileID: 5978517147097033419}
-  - {fileID: 1114187143883752882}
-  maxMotorTorque: 900
-  maxBrakeTorque: 3000
-  maxSteerAngle: 35
-  minSteerAngle: 12
-  steerSmooth: 0.1
-  steerWheels: 0000000001000000
-  driveWheels: 00000000010000000200000003000000
-  handbrakeWheels: 0200000003000000
 --- !u!114 &-2888960937160310923
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4369,8 +4345,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4244139175
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1195149122
+  InScenePlacedSourceGlobalObjectIdHash: 2821133724
   DeferredDespawnTick: 0
   Ownership: 3
   AlwaysReplicateAsRoot: 0
@@ -4382,7 +4358,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 0
   AllowOwnerToParent: 0
---- !u!114 &-7209366474080410228
+--- !u!114 &2884394844081241962
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4391,27 +4367,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 4221167466602670394}
   m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ffc7fc3bbaf5e04e92bca28252a7378, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
-  m_Actions: {fileID: -944628639613478452, guid: 51645e57100a7c347a04cb5480066cce, type: 3}
-  m_NotificationBehavior: 0
-  m_UIInputModule: {fileID: 0}
-  m_DeviceLostEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_DeviceRegainedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ControlsChangedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
-  m_DefaultActionMap: Vehicle
-  m_SplitScreenIndex: -1
-  m_Camera: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.SimpleCarController
+  ShowTopMostFoldoutHeaderGroup: 1
+  rb: {fileID: 5194048265131235105}
+  wheels:
+  - {fileID: 6726947198567593842}
+  - {fileID: 1638875022003181330}
+  - {fileID: 5978517147097033419}
+  - {fileID: 1114187143883752882}
+  seats: []
+  exitPoint: {fileID: 0}
+  driverSeatPosition: {fileID: 0}
+  passengerSeatPositions: []
+  vehicleTransferable: {fileID: 0}
+  maxMotorTorque: 900
+  maxBrakeTorque: 3000
+  maxSteerAngle: 35
+  minSteerAngle: 12
+  steerSmooth: 0.1
+  steerWheels: 0000000001000000
+  driveWheels: 00000000010000000200000003000000
+  handbrakeWheels: 0200000003000000
 --- !u!114 &3968503867146276620
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4426,7 +4404,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Physics::Game.Physics.PhysicsObjectMotion
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -4435,9 +4413,9 @@ MonoBehaviour:
   SyncRotAngleX: 1
   SyncRotAngleY: 1
   SyncRotAngleZ: 1
-  SyncScaleX: 1
-  SyncScaleY: 1
-  SyncScaleZ: 1
+  SyncScaleX: 0
+  SyncScaleY: 0
+  SyncScaleZ: 0
   PositionThreshold: 0.001
   RotAngleThreshold: 0.01
   ScaleThreshold: 0.01
@@ -4448,7 +4426,7 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
-  collisionType: 0
+  collisionType: 1
   collisionDamage: 0
   childColliders: []
   maxAngularVelocity: 30
@@ -4470,6 +4448,20 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &6580390671522172981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4221167466602670394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5e1c1f6d672dc5498a9c08e166d5016, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Vehicle::Game.Vehicle.VehicleTransferable
+  ShowTopMostFoldoutHeaderGroup: 1
+  vehicleController: {fileID: 2884394844081241962}
 --- !u!1 &4240885344203952974
 GameObject:
   m_ObjectHideFlags: 0
@@ -4816,8 +4808,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.Wheel.WheelController
   targetRigidbody: {fileID: 5194048265131235105}
+  visualTransform: {fileID: 1217520353653563089}
   radius: 0.35
   width: 0.25
+  wheelMass: 20
   springMaxLength: 0.3
   springMaxForce: 8000
   springForceCurve:
@@ -4846,12 +4840,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   damperBumpRate: 2000
   damperReboundRate: 2000
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
   motorTorque: 0
   brakeTorque: 0
-  wheelMass: 20
   rollingResistanceTorque: 30
   steerAngle: 0
   activeFrictionPreset: {fileID: 11400000, guid: 7aa767731cc03e1438f1cb463adba4d1, type: 2}
@@ -4878,7 +4868,10 @@ MonoBehaviour:
   useAdaptiveSubsteps: 1
   minSubsteps: 3
   maxSubsteps: 25
-  visualTransform: {fileID: 1217520353653563089}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  interpolateRemote: 1
 --- !u!114 &4814369496330571557
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5350,8 +5343,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.Wheel.WheelController
   targetRigidbody: {fileID: 5194048265131235105}
+  visualTransform: {fileID: 1836300137739254431}
   radius: 0.35
   width: 0.25
+  wheelMass: 20
   springMaxLength: 0.3
   springMaxForce: 8000
   springForceCurve:
@@ -5380,12 +5375,8 @@ MonoBehaviour:
     m_RotationOrder: 4
   damperBumpRate: 2000
   damperReboundRate: 2000
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
   motorTorque: 0
   brakeTorque: 0
-  wheelMass: 20
   rollingResistanceTorque: 30
   steerAngle: 0
   activeFrictionPreset: {fileID: 11400000, guid: 7aa767731cc03e1438f1cb463adba4d1, type: 2}
@@ -5412,7 +5403,10 @@ MonoBehaviour:
   useAdaptiveSubsteps: 1
   minSubsteps: 3
   maxSubsteps: 25
-  visualTransform: {fileID: 1836300137739254431}
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  interpolateRemote: 1
 --- !u!114 &7797224343582755501
 MonoBehaviour:
   m_ObjectHideFlags: 0

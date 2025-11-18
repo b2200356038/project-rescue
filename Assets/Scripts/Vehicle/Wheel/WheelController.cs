@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Game.Vehicle.Wheel
 {
-    public class WheelController : NetworkBehaviour
+    public class WheelController : MonoBehaviour
     {
 
         private const float LOW_SPEED_THRESHOLD = 0.12f;
@@ -69,14 +69,10 @@ namespace Game.Vehicle.Wheel
         public LayerMask groundLayer = ~0;
         
 
-        [Header("Visual Sync")] [SerializeField]
-        private int syncInterval = 10;
-
-        [SerializeField] private float changeThreshold = 0.01f;
-        [SerializeField] private bool interpolateRemote = true;
-
-
-
+        [Header("Visual Sync")]
+        //[SerializeField] private bool interpolateRemote = true;
+        
+        
         private GroundDetection _groundDetection;
         private WheelHit _wheelHit;
         private bool _isGrounded;
@@ -115,12 +111,6 @@ namespace Game.Vehicle.Wheel
         private float _smoothedSpringLength;
         
 
-        private NetworkVariable<WheelVisualData> _visualData = new NetworkVariable<WheelVisualData>(
-            writePerm: NetworkVariableWritePermission.Owner);
-
-        private int _syncCounter;
-        
-
         private float _dt;
         private bool _initialized;
         
@@ -138,7 +128,7 @@ namespace Game.Vehicle.Wheel
 
         private void FixedUpdate()
         {
-            if (!HasAuthority || !_initialized)
+            if (!_initialized)
                 return;
 
             _dt = Time.fixedDeltaTime;
@@ -150,7 +140,6 @@ namespace Game.Vehicle.Wheel
             UpdateWheelSpaceVectors();
             UpdateFriction();
             ApplyFrictionForces();
-            CheckSync();
         }
 
         private void LateUpdate()
@@ -543,87 +532,12 @@ namespace Game.Vehicle.Wheel
         }
         
 
-        private void CheckSync()
-        {
-            _syncCounter++;
-            if (_syncCounter >= syncInterval)
-            {
-                _syncCounter = 0;
-                SyncVisualData();
-            }
-        }
-
-        private void SyncVisualData()
-        {
-            var data = new WheelVisualData();
-
-            if (Mathf.Abs(_angularVelocity - _visualData.Value.GetAngularVelocity()) > changeThreshold)
-                data.SetAngularVelocity(_angularVelocity);
-
-            if (Mathf.Abs(_springLength - _visualData.Value.GetSpringLength()) > 0.01f)
-                data.SetSpringLength(_springLength);
-
-            if (Mathf.Abs(steerAngle - _visualData.Value.GetSteerAngle()) > 0.5f)
-                data.SetSteerAngle(steerAngle);
-
-            if (_isGrounded != _visualData.Value.GetIsGrounded())
-                data.SetIsGrounded(_isGrounded);
-
-            if (data.Flags != 0)
-                _visualData.Value = data;
-        }
-
-
         private void UpdateVisual()
         {
             if (visualTransform == null) return;
-
-            float angularVel, springLen, steerAng;
-
-            if (HasAuthority)
-            {
-                GetAuthorityVisualData(out angularVel, out springLen, out steerAng);
-            }
-            else
-            {
-                GetRemoteVisualData(out angularVel, out springLen, out steerAng);
-            }
-
-            ApplyVisualTransform(angularVel, springLen, steerAng);
+            ApplyVisualTransform(_angularVelocity, _springLength, steerAngle);
         }
-
-        private void GetAuthorityVisualData(out float angularVel, out float springLen, out float steerAng)
-        {
-            angularVel = _angularVelocity;
-            springLen = _springLength;
-            steerAng = steerAngle;
-        }
-
-        private void GetRemoteVisualData(out float angularVel, out float springLen, out float steerAng)
-        {
-            if (interpolateRemote)
-            {
-                _smoothedAngularVelocity = Mathf.Lerp(
-                    _smoothedAngularVelocity,
-                    _visualData.Value.GetAngularVelocity(),
-                    Time.deltaTime * ANGULAR_VEL_SMOOTHING);
-
-                _smoothedSpringLength = Mathf.Lerp(
-                    _smoothedSpringLength,
-                    _visualData.Value.GetSpringLength(),
-                    Time.deltaTime * SPRING_LENGTH_SMOOTHING);
-
-                angularVel = _smoothedAngularVelocity;
-                springLen = _smoothedSpringLength;
-            }
-            else
-            {
-                angularVel = _visualData.Value.GetAngularVelocity();
-                springLen = _visualData.Value.GetSpringLength();
-            }
-
-            steerAng = _visualData.Value.GetSteerAngle();
-        }
+        
 
         private void ApplyVisualTransform(float angularVel, float springLen, float steerAng)
         {
@@ -657,7 +571,7 @@ namespace Game.Vehicle.Wheel
             if (!Application.isPlaying) return;
 
             DrawWheelGizmo();
-            DrawDirectionGizmo(); // ← Burada çağrılıyor
+            DrawDirectionGizmo();
         }
 
         private void DrawWheelGizmo()

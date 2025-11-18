@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Game.Physics;
+using Game.Vehicle;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,7 +10,7 @@ namespace Game.Player
     public class PlayerStateMachine : NetworkBehaviour, INetworkUpdateSystem
     {
         [SerializeField] internal Rigidbody rb;
-        [SerializeField] internal PhysicsPlayerController physicsPlayerController;
+        [SerializeField] internal PlayerController playerController;
         [SerializeField] internal PlayerInput playerInput;
 
         private NetworkVariable<PlayerState> _currentState = new(
@@ -21,6 +21,8 @@ namespace Game.Player
         private Dictionary<PlayerState, PlayerStateBase> _states;
         private PlayerStateBase _activeState;
 
+        private VehicleController _currentVehicle;
+
         public PlayerState CurrentState => _currentState.Value;
         public event Action<PlayerState, PlayerState> OnStateChanged;
 
@@ -28,7 +30,8 @@ namespace Game.Player
         {
             _states = new Dictionary<PlayerState, PlayerStateBase>
             {
-                [PlayerState.OnFoot] = new PlayerOnFootState()
+                [PlayerState.OnFoot] = new PlayerOnFootState(),
+                [PlayerState.Driving] = new PlayerDrivingState()
             };
             foreach (var state in _states.Values)
             {
@@ -40,7 +43,7 @@ namespace Game.Player
         {
             base.OnNetworkSpawn();
             _currentState.OnValueChanged += OnStateChangedCallback;
-            if (IsOwner)
+            if (HasAuthority)
             {
                 ChangeState(PlayerState.OnFoot);
                 this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.Update);
@@ -48,13 +51,43 @@ namespace Game.Player
             }
         }
 
-        private void ChangeState(PlayerState newState)
+        public void ChangeState(PlayerState newState)
         {
-            if (!IsOwner)
+            if (!HasAuthority)
                 return;
             if (_currentState.Value == newState)
                 return;
             _currentState.Value = newState;
+        }
+
+        public void EnterVehicle(VehicleController vehicleController, bool isDriver)
+        {
+            if (!HasAuthority)
+                return;
+
+            _currentVehicle = vehicleController;
+
+            if (isDriver)
+            {
+                if (_states[PlayerState.Driving] is PlayerDrivingState drivingState)
+                {
+                    drivingState.SetVehicle(vehicleController);
+                }
+                ChangeState(PlayerState.Driving);
+            }
+            else
+            {
+                // TODO: Passenger state
+            }
+        }
+        
+        public void ExitVehicle()
+        {
+            if (!HasAuthority)
+                return;
+
+            _currentVehicle = null;
+            ChangeState(PlayerState.OnFoot);
         }
 
         private void OnStateChangedCallback(PlayerState previousState, PlayerState newState)
@@ -67,7 +100,7 @@ namespace Game.Player
             if (_states.TryGetValue(newState, out var state))
             {
                 _activeState = state;
-                if (IsOwner) _activeState.OnEnter();
+                if (HasAuthority) _activeState.OnEnter();
             }
 
             OnStateChanged?.Invoke(previousState, newState);
@@ -78,10 +111,10 @@ namespace Game.Player
             switch (updateStage)
             {
                 case NetworkUpdateStage.Update:
-                    _activeState.OnNetworkUpdate();
+                    _activeState?.OnNetworkUpdate();
                     break;
                 case NetworkUpdateStage.FixedUpdate:
-                    _activeState.OnNetworkFixedUpdate();
+                    _activeState?.OnNetworkFixedUpdate();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(updateStage), updateStage, null);
@@ -93,6 +126,11 @@ namespace Game.Player
             _currentState.OnValueChanged -= OnStateChangedCallback;
             this.UnregisterAllNetworkUpdates();
             base.OnNetworkDespawn();
+        }
+
+        public VehicleController GetCurrentVehicle()
+        {
+            return _currentVehicle;
         }
     }
 }

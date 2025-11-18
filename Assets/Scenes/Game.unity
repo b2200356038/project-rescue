@@ -815,21 +815,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: -7209366474080410228, guid: 9cef69e992c065d4284919babfe3a65a, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: -2888960937160310923, guid: 9cef69e992c065d4284919babfe3a65a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1195149122
-      objectReference: {fileID: 0}
-    - target: {fileID: -2888960937160310923, guid: 9cef69e992c065d4284919babfe3a65a, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 2821133724
-      objectReference: {fileID: 0}
-    - target: {fileID: 2884394844081241962, guid: 9cef69e992c065d4284919babfe3a65a, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4221167466602670394, guid: 9cef69e992c065d4284919babfe3a65a, type: 3}
       propertyPath: m_Name

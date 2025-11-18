@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace Game.Physics
+namespace Game.Player
 {
-    [CreateAssetMenu(fileName = "PhysicsPlayerControllerSettings", menuName = "ScriptableObjects/PhysicsPlayerControllerSettings", order = 1)]
-    class PhysicsPlayerControllerSettings : ScriptableObject
+    [CreateAssetMenu(fileName = "PlayerControllerSettings", menuName = "ScriptableObjects/PlayerControllerSettings", order = 1)]
+    class PlayerControllerSettings : ScriptableObject
     {
         [SerializeField]
         internal float WalkSpeed;

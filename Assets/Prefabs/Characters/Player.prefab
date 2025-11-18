@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3001504883
+  GlobalObjectIdHash: 2473698027
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 0
@@ -218,7 +218,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Physics.PhysicsPlayerController
   rb: {fileID: 4745766379562620470}
-  physicsPlayerControllerSettings: {fileID: 11400000, guid: 0d3e0ef4c3487904f90abbec2dc4fcc2, type: 2}
+  playerControllerSettings: {fileID: 11400000, guid: 0d3e0ef4c3487904f90abbec2dc4fcc2, type: 2}
 --- !u!114 &4903152183366241606
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,5 +335,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game.Player::Game.Player.PlayerStateMachine
   ShowTopMostFoldoutHeaderGroup: 1
   rb: {fileID: 4745766379562620470}
-  physicsPlayerController: {fileID: 4710238820213277529}
+  playerController: {fileID: 4710238820213277529}
   playerInput: {fileID: 4903152183366241606}

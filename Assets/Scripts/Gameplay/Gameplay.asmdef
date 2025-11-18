@@ -1,12 +1,11 @@
 {
-    "name": "Game.Editor",
+    "name": "Gameplay",
     "rootNamespace": "Game",
     "references": [
-        "GUID:df171376ba1ef084abcb818d5494f726"
+        "GUID:1491147abca9d7d4bb7105af628b223e",
+        "GUID:d0c18db71bdcd434f8260304f71d5440"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

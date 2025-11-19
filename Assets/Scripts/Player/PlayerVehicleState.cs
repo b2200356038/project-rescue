@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace Game.Player
 {
-    public class PlayerDrivingState : PlayerStateBase
+    public class PlayerVehicleState : PlayerStateBase
     {
         private PlayerController _playerController;
         private PlayerInput _playerInput;
@@ -20,12 +20,8 @@ namespace Game.Player
         {
             _playerController = StateMachine.playerController;
             _playerInput = StateMachine.playerInput;
-            _playerController.enabled = false;
-            _playerInput.enabled = false;
-            if (_vehicleController != null)
-            {
-                _vehicleController.enabled = true;
-            }
+            if (_playerController != null) _playerController.enabled = false;
+            if (_playerInput != null) _playerInput.enabled = false;
             InputSystemManager.Instance.EnableVehicleInputs();
             GameInput.Actions.Vehicle.Interact.performed += OnExitRequested;
         }
@@ -41,13 +37,11 @@ namespace Game.Player
 
         public override void OnNetworkFixedUpdate()
         {
-            if (_vehicleController == null) return;
-            _vehicleController.OnFixedUpdate();
         }
 
-        void OnExitRequested(InputAction.CallbackContext _)
+        void OnExitRequested(InputAction.CallbackContext context)
         {
-            if (_vehicleController == null) return;
+            StateMachine.ExitVehicle();
         }
 
         public override void OnExit()
@@ -56,10 +50,9 @@ namespace Game.Player
             if (_vehicleController != null)
             {
                 _vehicleController.ResetInputs();
-                _vehicleController.enabled = false;
             }
-            _playerController.enabled = true;
-            _playerInput.enabled = true;
+            if (_playerController != null) _playerController.enabled = true;
+            if (_playerInput != null) _playerInput.enabled = true;
             InputSystemManager.Instance.EnableOnFootInputs();
             base.OnExit();
         }

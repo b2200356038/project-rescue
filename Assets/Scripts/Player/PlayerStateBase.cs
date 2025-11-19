@@ -9,8 +9,7 @@ namespace Game.Player
     {
         None,
         OnFoot,
-        Driving,
-        Passenger,
+        Vehicle,
         Observer  
     }
     public abstract class PlayerStateBase

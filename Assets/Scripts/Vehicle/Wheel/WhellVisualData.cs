@@ -11,15 +11,14 @@ namespace Game.Vehicle.Wheel
         AngularVelocity = 1 << 0,  // 0x01
         SpringLength = 1 << 1,      // 0x02
         SteerAngle = 1 << 2,        // 0x04
-        IsGrounded = 1 << 3,        // 0x08
     }
 
     public struct WheelVisualData : INetworkSerializable
     {
         public byte Flags;
-        public short angularVelocity;    
-        public byte springLength;     
-        public sbyte steerAngle;    
+        public short AngularVelocity;   
+        public byte SpringLength;       
+        public sbyte SteerAngle;         
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SetFlag(WheelVisualFlags flag, bool value)
@@ -38,45 +37,35 @@ namespace Game.Vehicle.Wheel
 
         public void SetAngularVelocity(float value)
         {
-            angularVelocity = (short)Mathf.Clamp(value * 100f, -32767, 32767);
+            AngularVelocity = (short)Mathf.Clamp(value * 100f, -32767, 32767);
             SetFlag(WheelVisualFlags.AngularVelocity, true);
         }
 
         public float GetAngularVelocity()
         {
-            return angularVelocity / 100f;
+            return AngularVelocity / 100f;
         }
 
         public void SetSpringLength(float value)
         {
-            springLength = (byte)Mathf.Clamp(value * 100f, 0, 255);
+            SpringLength = (byte)Mathf.Clamp(value * 100f, 0, 255);
             SetFlag(WheelVisualFlags.SpringLength, true);
         }
 
         public float GetSpringLength()
         {
-            return springLength / 100f;
+            return SpringLength / 100f;
         }
 
         public void SetSteerAngle(float value)
         {
-            steerAngle = (sbyte)Mathf.Clamp(value, -127, 127);
+            SteerAngle = (sbyte)Mathf.Clamp(value, -127, 127);
             SetFlag(WheelVisualFlags.SteerAngle, true);
         }
 
         public float GetSteerAngle()
         {
-            return steerAngle;
-        }
-
-        public void SetIsGrounded(bool value)
-        {
-            SetFlag(WheelVisualFlags.IsGrounded, value);
-        }
-
-        public bool GetIsGrounded()
-        {
-            return HasFlag(WheelVisualFlags.IsGrounded);
+            return SteerAngle;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -85,17 +74,17 @@ namespace Game.Vehicle.Wheel
 
             if (HasFlag(WheelVisualFlags.AngularVelocity))
             {
-                serializer.SerializeValue(ref angularVelocity);
+                serializer.SerializeValue(ref AngularVelocity);
             }
 
             if (HasFlag(WheelVisualFlags.SpringLength))
             {
-                serializer.SerializeValue(ref springLength);
+                serializer.SerializeValue(ref SpringLength);
             }
 
             if (HasFlag(WheelVisualFlags.SteerAngle))
             {
-                serializer.SerializeValue(ref steerAngle); 
+                serializer.SerializeValue(ref SteerAngle);
             }
         }
     }

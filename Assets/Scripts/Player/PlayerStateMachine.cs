@@ -9,30 +9,33 @@ namespace Game.Player
 {
     public class PlayerStateMachine : NetworkBehaviour, INetworkUpdateSystem
     {
+        [Header("References")]
         [SerializeField] internal Rigidbody rb;
-        [SerializeField] internal PlayerController playerController;
+        [SerializeField] internal PlayerController playerController; 
         [SerializeField] internal PlayerInput playerInput;
+        [SerializeField] internal Collider playerCollider; 
 
-        private NetworkVariable<PlayerState> _currentState = new(
+        [Header("State")]
+        [SerializeField] private NetworkVariable<PlayerState> currentState = new(
             PlayerState.None,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
         private Dictionary<PlayerState, PlayerStateBase> _states;
         private PlayerStateBase _activeState;
-
         private VehicleController _currentVehicle;
 
-        public PlayerState CurrentState => _currentState.Value;
-        public event Action<PlayerState, PlayerState> OnStateChanged;
+        public PlayerState CurrentState => currentState.Value;
+        public event Action<PlayerState, PlayerState> OnStateChanged; 
 
         private void Awake()
         {
             _states = new Dictionary<PlayerState, PlayerStateBase>
             {
                 [PlayerState.OnFoot] = new PlayerOnFootState(),
-                [PlayerState.Driving] = new PlayerDrivingState()
+                [PlayerState.Vehicle] = new PlayerVehicleState()
             };
+
             foreach (var state in _states.Values)
             {
                 state.Initialize(this);
@@ -42,8 +45,10 @@ namespace Game.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            _currentState.OnValueChanged += OnStateChangedCallback;
-            if (HasAuthority)
+            
+            currentState.OnValueChanged += OnStateChangedCallback;
+
+            if (IsOwner)
             {
                 ChangeState(PlayerState.OnFoot);
                 this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.Update);
@@ -51,43 +56,19 @@ namespace Game.Player
             }
         }
 
-        public void ChangeState(PlayerState newState)
+        public override void OnNetworkDespawn()
         {
-            if (!HasAuthority)
-                return;
-            if (_currentState.Value == newState)
-                return;
-            _currentState.Value = newState;
-        }
-
-        public void EnterVehicle(VehicleController vehicleController, bool isDriver)
-        {
-            if (!HasAuthority)
-                return;
-
-            _currentVehicle = vehicleController;
-
-            if (isDriver)
-            {
-                if (_states[PlayerState.Driving] is PlayerDrivingState drivingState)
-                {
-                    drivingState.SetVehicle(vehicleController);
-                }
-                ChangeState(PlayerState.Driving);
-            }
-            else
-            {
-                // TODO: Passenger state
-            }
+            currentState.OnValueChanged -= OnStateChangedCallback;
+            this.UnregisterAllNetworkUpdates();
+            base.OnNetworkDespawn();
         }
         
-        public void ExitVehicle()
+        public void ChangeState(PlayerState newState)
         {
-            if (!HasAuthority)
-                return;
-
-            _currentVehicle = null;
-            ChangeState(PlayerState.OnFoot);
+            if (!IsOwner) return;
+            if (currentState.Value == newState) return;
+            
+            currentState.Value = newState;
         }
 
         private void OnStateChangedCallback(PlayerState previousState, PlayerState newState)
@@ -96,7 +77,6 @@ namespace Game.Player
             {
                 _activeState.OnExit();
             }
-
             if (_states.TryGetValue(newState, out var state))
             {
                 _activeState = state;
@@ -105,32 +85,71 @@ namespace Game.Player
 
             OnStateChanged?.Invoke(previousState, newState);
         }
+        
+        public void EnterVehicle(VehicleController vehicleController)
+        {
+            if (!HasAuthority) return;
+            _currentVehicle = vehicleController;
+            if (_states[PlayerState.Vehicle] is PlayerVehicleState vehicleState)
+            {
+                vehicleState.SetVehicle(vehicleController);
+            }
+            rb.isKinematic = true;
+            rb.detectCollisions = false;
+            if (playerCollider) playerCollider.enabled = false;
+            ChangeState(PlayerState.Vehicle);
+        }
 
+        public void ExitVehicle()
+        {
+            if (!HasAuthority) return;
+
+            if (_currentVehicle != null)
+            {
+                var seatManager = _currentVehicle.GetComponent<VehicleSeatManager>();
+                seatManager.RequestExitVehicle(OwnerClientId);
+                Transform exitPoint = seatManager.GetExitPoint();
+                transform.position = exitPoint.position;
+                transform.rotation = exitPoint.rotation;
+
+                _currentVehicle = null;
+            }
+
+            rb.isKinematic = false;
+            rb.detectCollisions = true;
+            if (playerCollider) playerCollider.enabled = true;
+
+            ChangeState(PlayerState.OnFoot);
+        }
         public void NetworkUpdate(NetworkUpdateStage updateStage)
         {
             switch (updateStage)
             {
                 case NetworkUpdateStage.Update:
                     _activeState?.OnNetworkUpdate();
+                    SyncPositionWithSeat();
                     break;
                 case NetworkUpdateStage.FixedUpdate:
                     _activeState?.OnNetworkFixedUpdate();
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(updateStage), updateStage, null);
             }
         }
 
-        public override void OnNetworkDespawn()
+        private void SyncPositionWithSeat()
         {
-            _currentState.OnValueChanged -= OnStateChangedCallback;
-            this.UnregisterAllNetworkUpdates();
-            base.OnNetworkDespawn();
+            if (IsOwner && currentState.Value == PlayerState.Vehicle && _currentVehicle != null)
+            {
+                var seatManager = _currentVehicle.GetComponent<VehicleSeatManager>();
+                Transform seatTransform = seatManager.GetSeatTransform(OwnerClientId);
+                
+                if (seatTransform != null)
+                {
+                    transform.position = seatTransform.position;
+                    transform.rotation = seatTransform.rotation;
+                }
+            }
         }
 
-        public VehicleController GetCurrentVehicle()
-        {
-            return _currentVehicle;
-        }
+        public VehicleController GetCurrentVehicle() => _currentVehicle;
     }
 }

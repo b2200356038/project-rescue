@@ -1,4 +1,3 @@
-using System.Collections;
 using Game.Gameplay;
 using Game.Input;
 using Game.Vehicle;
@@ -19,21 +18,15 @@ namespace Game.Player
         [SerializeField] private Transform raycastOrigin;
         [SerializeField] private BoxCollider interactCollider;
         
-        private PlayerStateMachine _stateMachine;
         private IInteractable _currentInteractable;
-        private Collider _potentialInteractCollider;
+        private PlayerStateMachine _stateMachine;
         private Collider[] _overlapResults = new Collider[8];
-        
-        private bool _holdingInteractionPerformed;
-        private bool _waitingForOwnership;
 
         private void Awake()
         {
             _stateMachine = GetComponent<PlayerStateMachine>();
-            
-            if (raycastOrigin == null)
-                raycastOrigin = transform;
-                
+
+            if (raycastOrigin == null) raycastOrigin = transform;
             if (interactCollider == null)
             {
                 interactCollider = gameObject.AddComponent<BoxCollider>();
@@ -45,13 +38,7 @@ namespace Game.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
-            if (!HasAuthority)
-            {
-                enabled = false;
-                return;
-            }
-
+            if (!HasAuthority) { return; }
             this.RegisterNetworkUpdate(NetworkUpdateStage.FixedUpdate);
             GameInput.Actions.Player.Interact.performed += OnInteractPerformed;
             GameInput.Actions.Player.Interact.canceled += OnInteractCanceled;
@@ -60,66 +47,66 @@ namespace Game.Player
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            
             if (HasAuthority)
             {
                 GameInput.Actions.Player.Interact.performed -= OnInteractPerformed;
                 GameInput.Actions.Player.Interact.canceled -= OnInteractCanceled;
-                this.UnregisterAllNetworkUpdates();
             }
+            this.UnregisterAllNetworkUpdates();
         }
 
         private void OnInteractPerformed(InputAction.CallbackContext context)
         {
-            switch (context.interaction)
-            {
-                case HoldInteraction:
-                    _holdingInteractionPerformed = true;
-                    OnHoldStarted();
-                    break;
-                case TapInteraction:
-                    OnTapPerformed();
-                    break;
-            }
+            if (context.interaction is TapInteraction)
+                OnTapPerformed();
         }
 
         private void OnInteractCanceled(InputAction.CallbackContext context)
         {
-            if (context.interaction is HoldInteraction)
-            {
-                if (_holdingInteractionPerformed)
-                {
-                    OnHoldReleased(context.duration);
-                }
-                _holdingInteractionPerformed = false;
-            }
         }
 
         private void OnTapPerformed()
         {
             if (_currentInteractable == null || !_currentInteractable.CanInteract())
                 return;
+
             if (_currentInteractable is VehicleController vehicle)
             {
-                _stateMachine.EnterVehicle(vehicle); 
+                HandleVehicleEntry(vehicle);
             }
             else
             {
                 _currentInteractable.Interact();
             }
         }
-        
-        private void OnHoldStarted()
-        {
-            if (_currentInteractable != null)
-            {
-                // Hold animasyonu vs.
-            }
-        }
 
-        private void OnHoldReleased(double holdDuration)
-        {
-            // Hold bırakıldığında
+        private void HandleVehicleEntry(VehicleController vehicle)
+        { 
+            if (!vehicle.TryGetAvailableSeat(out int seatIndex, out bool isDriverSeat))
+            {
+                return;
+            }
+
+            if (isDriverSeat)
+            {
+                vehicle.RequestDriverOwnership((bool approved) =>
+                {
+                    if (approved)
+                    {
+                        vehicle.ClaimDriverSeat(NetworkManager.Singleton.LocalClientId);
+                        _stateMachine.EnterVehicle(vehicle, seatIndex);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("✗ Ownership reddedildi! Başka biri zaten sürüyor.");
+                    }
+                });
+            }
+            else
+            {
+                vehicle.EnterPassenger(NetworkManager.Singleton.LocalClientId);
+                _stateMachine.EnterVehicle(vehicle, seatIndex);
+            }
         }
 
         private void CheckForInteractablesInRange()
@@ -127,33 +114,23 @@ namespace Game.Player
             Vector3 checkPosition = interactCollider.transform.position;
             Vector3 halfExtents = interactCollider.bounds.extents;
             
-            int hitCount = UnityEngine.Physics.OverlapBoxNonAlloc(
-                checkPosition,
-                halfExtents,
-                _overlapResults,
-                Quaternion.identity,
-                interactionLayer
-            );
+            int hitCount = UnityEngine.Physics.OverlapBoxNonAlloc(checkPosition, halfExtents, _overlapResults, Quaternion.identity, interactionLayer);
 
             IInteractable closestInteractable = null;
             float closestDistance = float.MaxValue;
-            Collider closestCollider = null;
 
             for (int i = 0; i < hitCount; i++)
             {
                 var hitCollider = _overlapResults[i];
-                if (hitCollider.transform.IsChildOf(transform) || hitCollider == interactCollider)
-                    continue;
+                if (hitCollider.transform.IsChildOf(transform) || hitCollider == interactCollider) continue;
                     
                 if (hitCollider.TryGetComponent<IInteractable>(out var interactable))
                 {
                     float distance = Vector3.Distance(transform.position, hitCollider.transform.position);
-                    
                     if (distance < closestDistance && distance <= interactionRange)
                     {
                         closestDistance = distance;
                         closestInteractable = interactable;
-                        closestCollider = hitCollider;
                     }
                 }
             }
@@ -161,35 +138,12 @@ namespace Game.Player
             if (closestInteractable != _currentInteractable)
             {
                 _currentInteractable = closestInteractable;
-                _potentialInteractCollider = closestCollider;
-                
-                if (_currentInteractable != null)
-                {
-                    OnInteractableInRange(_currentInteractable);
-                }
-                else
-                {
-                    OnInteractableOutOfRange();
-                }
             }
-        }
-
-        private void OnInteractableInRange(IInteractable interactable)
-        {
-            string prompt = interactable.GetInteractionPrompt();
-            Debug.Log($"Interaction available: {prompt}");
-        }
-
-        private void OnInteractableOutOfRange()
-        {
         }
 
         public void NetworkUpdate(NetworkUpdateStage updateStage)
         {
-            if (updateStage == NetworkUpdateStage.FixedUpdate)
-            {
-                CheckForInteractablesInRange();
-            }
+            if (updateStage == NetworkUpdateStage.FixedUpdate) CheckForInteractablesInRange();
         }
 
         private void OnDrawGizmosSelected()
@@ -199,10 +153,6 @@ namespace Game.Player
                 Gizmos.color = _currentInteractable != null ? Color.green : Color.yellow;
                 Gizmos.DrawWireCube(interactCollider.bounds.center, interactCollider.bounds.size);
             }
-
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(transform.position, interactionRange);
         }
-        
     }
 }

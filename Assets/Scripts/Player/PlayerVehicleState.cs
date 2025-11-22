@@ -41,7 +41,7 @@ namespace Game.Player
 
         void OnExitRequested(InputAction.CallbackContext context)
         {
-            StateMachine.ExitVehicle();
+           // StateMachine.ExitVehicle();
         }
 
         public override void OnExit()

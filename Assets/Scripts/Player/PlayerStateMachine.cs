@@ -45,10 +45,8 @@ namespace Game.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
             currentState.OnValueChanged += OnStateChangedCallback;
-
-            if (IsOwner)
+            if (HasAuthority)
             {
                 ChangeState(PlayerState.OnFoot);
                 this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.Update);
@@ -67,7 +65,6 @@ namespace Game.Player
         {
             if (!IsOwner) return;
             if (currentState.Value == newState) return;
-            
             currentState.Value = newState;
         }
 
@@ -82,74 +79,53 @@ namespace Game.Player
                 _activeState = state;
                 if (HasAuthority) _activeState.OnEnter();
             }
-
             OnStateChanged?.Invoke(previousState, newState);
         }
+        public void EnterVehicle(VehicleController vehicleController, int seatIndex)
+        {
+            if (!HasAuthority) return;
+            EnterVehicleRpc(new NetworkBehaviourReference(vehicleController), seatIndex);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void EnterVehicleRpc(NetworkBehaviourReference vehicleRef, int seatIndex)
+        {
+            if (vehicleRef.TryGet(out VehicleController vehicle, NetworkManager))
+            {
+                _currentVehicle = vehicle;
+                if (_states[PlayerState.Vehicle] is PlayerVehicleState vehicleState)
+                {
+                    vehicleState.SetVehicle(vehicle);
+                }
+                if (playerCollider) playerCollider.enabled = false;
+                var seatManager = vehicle.GetComponent<VehicleSeatManager>();
+                Transform targetSeat = seatManager.GetSeatTransformByIndex(seatIndex); 
+                if (targetSeat != null)
+                {
+                    transform.position = targetSeat.position;
+                    transform.rotation = targetSeat.rotation;
+                }
+                if (HasAuthority)
+                {
+                    ChangeState(PlayerState.Vehicle);
+                }
+            }
+        }
         
-        public void EnterVehicle(VehicleController vehicleController)
-        {
-            if (!HasAuthority) return;
-            _currentVehicle = vehicleController;
-            if (_states[PlayerState.Vehicle] is PlayerVehicleState vehicleState)
-            {
-                vehicleState.SetVehicle(vehicleController);
-            }
-            rb.isKinematic = true;
-            rb.detectCollisions = false;
-            if (playerCollider) playerCollider.enabled = false;
-            ChangeState(PlayerState.Vehicle);
-        }
 
-        public void ExitVehicle()
-        {
-            if (!HasAuthority) return;
-
-            if (_currentVehicle != null)
-            {
-                var seatManager = _currentVehicle.GetComponent<VehicleSeatManager>();
-                seatManager.RequestExitVehicle(OwnerClientId);
-                Transform exitPoint = seatManager.GetExitPoint();
-                transform.position = exitPoint.position;
-                transform.rotation = exitPoint.rotation;
-
-                _currentVehicle = null;
-            }
-
-            rb.isKinematic = false;
-            rb.detectCollisions = true;
-            if (playerCollider) playerCollider.enabled = true;
-
-            ChangeState(PlayerState.OnFoot);
-        }
         public void NetworkUpdate(NetworkUpdateStage updateStage)
         {
             switch (updateStage)
             {
                 case NetworkUpdateStage.Update:
                     _activeState?.OnNetworkUpdate();
-                    SyncPositionWithSeat();
                     break;
                 case NetworkUpdateStage.FixedUpdate:
                     _activeState?.OnNetworkFixedUpdate();
                     break;
             }
         }
-
-        private void SyncPositionWithSeat()
-        {
-            if (IsOwner && currentState.Value == PlayerState.Vehicle && _currentVehicle != null)
-            {
-                var seatManager = _currentVehicle.GetComponent<VehicleSeatManager>();
-                Transform seatTransform = seatManager.GetSeatTransform(OwnerClientId);
-                
-                if (seatTransform != null)
-                {
-                    transform.position = seatTransform.position;
-                    transform.rotation = seatTransform.rotation;
-                }
-            }
-        }
-
+        
         public VehicleController GetCurrentVehicle() => _currentVehicle;
     }
 }

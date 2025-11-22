@@ -10,32 +10,25 @@ namespace Game.Vehicle
         {
             public Transform seatTransform;
             public bool isDriverSeat;
-            public ulong occupantClientId = ulong.MaxValue; 
+            public ulong occupantClientId = ulong.MaxValue;
             public bool IsOccupied => occupantClientId != ulong.MaxValue;
         }
 
-        [Header("Seat Configuration")]
-        [SerializeField] private VehicleSeat[] seats;
-        
-        [Header("Exit Point")]
+        [Header("Seat Configuration")] [SerializeField]
+        private VehicleSeat[] seats;
+
         [SerializeField] private Transform exitPoint;
-
         private NetworkList<ulong> _occupiedSeats;
-
         private void Awake()
         {
-            _occupiedSeats = new NetworkList<ulong>(
-                writePerm: NetworkVariableWritePermission.Server
-            );
+            _occupiedSeats = new NetworkList<ulong>(writePerm: NetworkVariableWritePermission.Server);
         }
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            if (IsServer)
+            if (HasAuthority)
             {
-                for (int i = 0; i < seats.Length; i++)
-                    _occupiedSeats.Add(ulong.MaxValue);
+                for (int i = 0; i < seats.Length; i++) _occupiedSeats.Add(ulong.MaxValue);
             }
             _occupiedSeats.OnListChanged += OnSeatsChanged;
         }
@@ -49,75 +42,62 @@ namespace Game.Vehicle
         private void OnSeatsChanged(NetworkListEvent<ulong> changeEvent)
         {
             if (changeEvent.Index >= 0 && changeEvent.Index < seats.Length)
-            {
                 seats[changeEvent.Index].occupantClientId = changeEvent.Value;
-            }
-        }
-        
-        public void RequestEnterVehicle(ulong clientId)
-        {
-            RequestEnterVehicleServerRpc(clientId);
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        private void RequestEnterVehicleServerRpc(ulong clientId)
+        public void ClaimDriverSeat(ulong clientId)
         {
-            if (GetSeatIndex(clientId) != -1) return;
-            for (int i = 0; i < seats.Length; i++)
-            {
-                if (seats[i].isDriverSeat && !seats[i].IsOccupied)
-                {
-                    OccupySeat(i, clientId);
-                    return;
-                }
-            }
+            int driverSeatIndex = GetDriverSeatIndex();
+            if (driverSeatIndex != -1) UpdateDriverSeat(driverSeatIndex, clientId);
+        }
+        
+        private void UpdateDriverSeat(int seatIndex, ulong clientId)
+        {
+            _occupiedSeats[seatIndex] = clientId;
+            seats[seatIndex].occupantClientId = clientId;
+        }
+
+        public void RequestEnterPassenger(ulong clientId)
+        {
+            RequestEnterPassengerServerRpc(clientId);
+        }
+
+        [Rpc(SendTo.Authority)]
+        private void RequestEnterPassengerServerRpc(ulong clientId)
+        {
             for (int i = 0; i < seats.Length; i++)
             {
                 if (!seats[i].isDriverSeat && !seats[i].IsOccupied)
                 {
-                    OccupySeat(i, clientId);
+                    _occupiedSeats[i] = clientId;
+                    seats[i].occupantClientId = clientId;
                     return;
                 }
             }
         }
-
-        public void RequestExitVehicle(ulong clientId)
-        {
-            RequestExitVehicleServerRpc(clientId);
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        private void RequestExitVehicleServerRpc(ulong clientId)
-        {
-            int seatIndex = GetSeatIndex(clientId);
-            if (seatIndex != -1)
-            {
-                bool wasDriver = seats[seatIndex].isDriverSeat;
-                _occupiedSeats[seatIndex] = ulong.MaxValue;
-                seats[seatIndex].occupantClientId = ulong.MaxValue;
-                if (wasDriver)
-                {
-                    NetworkObject.RemoveOwnership();
-                }
-            }
-        }
-
-        private void OccupySeat(int index, ulong clientId)
-        {
-            _occupiedSeats[index] = clientId;
-            seats[index].occupantClientId = clientId;
-            if (seats[index].isDriverSeat)
-            {
-                NetworkObject.ChangeOwnership(clientId);
-            }
-        }
         
+
         public int GetSeatIndex(ulong clientId)
         {
             for (int i = 0; i < seats.Length; i++)
-            {
-                if (seats[i].occupantClientId == clientId) return i;
-            }
+                if (seats[i].occupantClientId == clientId)
+                    return i;
+            return -1;
+        }
+
+        public int GetDriverSeatIndex()
+        {
+            for (int i = 0; i < seats.Length; i++)
+                if (seats[i].isDriverSeat)
+                    return i;
+            return -1;
+        }
+
+        public int GetFirstEmptyPassengerSeatIndex()
+        {
+            for (int i = 0; i < seats.Length; i++)
+                if (!seats[i].isDriverSeat && !seats[i].IsOccupied)
+                    return i;
             return -1;
         }
 
@@ -127,18 +107,27 @@ namespace Game.Vehicle
             return index != -1 ? seats[index].seatTransform : null;
         }
 
+        public Transform GetSeatTransformByIndex(int index)
+        {
+            if (index >= 0 && index < seats.Length) return seats[index].seatTransform;
+            return null;
+        }
+
         public Transform GetExitPoint() => exitPoint ? exitPoint : transform;
 
         public bool IsDriverSeatEmpty()
         {
             foreach (var seat in seats)
-                if (seat.isDriverSeat && !seat.IsOccupied) return true;
+                if (seat.isDriverSeat && !seat.IsOccupied)
+                    return true;
             return false;
         }
-        
+
         public bool HasEmptySeats()
         {
-            foreach (var seat in seats) if (!seat.IsOccupied) return true;
+            foreach (var seat in seats)
+                if (!seat.IsOccupied)
+                    return true;
             return false;
         }
     }

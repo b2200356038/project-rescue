@@ -177,9 +177,7 @@ namespace Game.Vehicle
             seatManager.RequestEnterPassenger(clientId);
         }
 
-        public void Interact()
-        {
-        }
+        public void Interact() {}
 
         public bool CanInteract() => seatManager.HasEmptySeats();
         public string GetInteractionPrompt() => seatManager.IsDriverSeatEmpty() ? "Drive" : "Enter";

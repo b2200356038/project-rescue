@@ -21,10 +21,7 @@ namespace Game.Player
         public virtual void OnFixedUpdate() { }
         public virtual void OnNetworkUpdate() { }
         public virtual void OnNetworkFixedUpdate() { }
-        internal void Initialize(PlayerStateMachine stateMachine)
-        {
-            StateMachine = stateMachine;
-        }
+        internal virtual void Initialize(PlayerStateMachine playerStateMachine) { }
         
     }
 }

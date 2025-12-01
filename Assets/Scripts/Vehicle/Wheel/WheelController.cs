@@ -131,7 +131,6 @@ namespace Game.Vehicle.Wheel
             if (_isRemoteMode)
             {
                 float t = Time.deltaTime * 15f; 
-                
                 _displayAngularVelocity = Mathf.Lerp(_displayAngularVelocity, _targetAngularVelocity, t);
                 _displaySpringLength = Mathf.Lerp(_displaySpringLength, _targetSpringLength, t);
                 _displaySteerAngle = Mathf.Lerp(_displaySteerAngle, _targetSteerAngle, t);
@@ -182,12 +181,6 @@ namespace Game.Vehicle.Wheel
         public void SetSteerAngle(float angle)
         {
             steerAngle = Mathf.Clamp(angle, -45f, 45f);
-        }
-
-        public void WakeUp()
-        {
-            _wakeOneFrame = true;
-            _lowSpeedReferenceIsSet = false;
         }
 
         public void Initialize()
@@ -246,7 +239,6 @@ namespace Game.Vehicle.Wheel
             Vector3 castOrigin = transform.position + _suspensionUp * (radius * 1.1f);
             Vector3 castDirection = -_suspensionUp;
             float castDistance = radius * 2.2f + springMaxLength;
-
             _isGrounded = _groundDetection.WheelCast(
                 castOrigin, castDirection, castDistance, radius, width, ref _wheelHit, groundLayer
             );
@@ -340,8 +332,6 @@ namespace Game.Vehicle.Wheel
             ApplyFrictionCircle();
             
             _frictionForce = _wheelRight * sideFriction.force + _wheelForward * forwardFriction.force;
-
-            if (_wakeOneFrame) _wakeOneFrame = false;
         }
 
         private void CalculateLoadDistribution(out float lngLoadClamped, out float latLoadClamped)

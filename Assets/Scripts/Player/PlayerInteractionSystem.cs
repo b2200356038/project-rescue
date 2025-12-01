@@ -20,7 +20,7 @@ namespace Game.Player
         
         private IInteractable _currentInteractable;
         private PlayerStateMachine _stateMachine;
-        private Collider[] _overlapResults = new Collider[8];
+        private readonly Collider[] _overlapResults = new Collider[8];
 
         private void Awake()
         {
@@ -69,46 +69,8 @@ namespace Game.Player
         {
             if (_currentInteractable == null || !_currentInteractable.CanInteract())
                 return;
-
-            if (_currentInteractable is VehicleController vehicle)
-            {
-                HandleVehicleEntry(vehicle);
-            }
-            else
-            {
-                _currentInteractable.Interact();
-            }
         }
-
-        private void HandleVehicleEntry(VehicleController vehicle)
-        { 
-            if (!vehicle.TryGetAvailableSeat(out int seatIndex, out bool isDriverSeat))
-            {
-                return;
-            }
-
-            if (isDriverSeat)
-            {
-                vehicle.RequestDriverOwnership((bool approved) =>
-                {
-                    if (approved)
-                    {
-                        vehicle.ClaimDriverSeat(NetworkManager.Singleton.LocalClientId);
-                        _stateMachine.EnterVehicle(vehicle, seatIndex);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("✗ Ownership reddedildi! Başka biri zaten sürüyor.");
-                    }
-                });
-            }
-            else
-            {
-                vehicle.EnterPassenger(NetworkManager.Singleton.LocalClientId);
-                _stateMachine.EnterVehicle(vehicle, seatIndex);
-            }
-        }
-
+        
         private void CheckForInteractablesInRange()
         {
             Vector3 checkPosition = interactCollider.transform.position;
@@ -135,7 +97,7 @@ namespace Game.Player
                 }
             }
 
-            if (closestInteractable != _currentInteractable)
+            if (closestInteractable != null && closestInteractable != _currentInteractable)
             {
                 _currentInteractable = closestInteractable;
             }

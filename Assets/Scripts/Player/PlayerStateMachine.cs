@@ -26,106 +26,88 @@ namespace Game.Player
         private VehicleController _currentVehicle;
 
         public PlayerState CurrentState => currentState.Value;
-        public event Action<PlayerState, PlayerState> OnStateChanged; 
+        public event Action<PlayerState, PlayerState> OnStateChanged;
 
-        private void Awake()
-        {
-            _states = new Dictionary<PlayerState, PlayerStateBase>
-            {
-                [PlayerState.OnFoot] = new PlayerOnFootState(),
-                [PlayerState.Vehicle] = new PlayerVehicleState()
-            };
-
-            foreach (var state in _states.Values)
-            {
-                state.Initialize(this);
-            }
-        }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            BuildStates();
             currentState.OnValueChanged += OnStateChangedCallback;
-            if (HasAuthority)
+            this.RegisterNetworkUpdate(NetworkUpdateStage.Update);
+            this.RegisterNetworkUpdate(NetworkUpdateStage.FixedUpdate);
+            if (IsOwner)
             {
                 ChangeState(PlayerState.OnFoot);
-                this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.Update);
-                this.RegisterNetworkUpdate(updateStage: NetworkUpdateStage.FixedUpdate);
+            }
+            else
+            {
+                if (_states.TryGetValue(currentState.Value, out var st))
+                {
+                    _activeState = st;
+                    _activeState.OnEnter();
+                }
             }
         }
 
+
         public override void OnNetworkDespawn()
         {
+            base.OnNetworkDespawn();
+            
             currentState.OnValueChanged -= OnStateChangedCallback;
             this.UnregisterAllNetworkUpdates();
-            base.OnNetworkDespawn();
+        }
+        private void BuildStates()
+        {
+            _states = new Dictionary<PlayerState, PlayerStateBase>();
+
+            if (IsOwner)
+            {
+                _states[PlayerState.OnFoot] = new PlayerOnFootStateOwner();
+            }
+            else
+            {
+                _states[PlayerState.OnFoot] = new PlayerOnFootStateNotOwner();
+            }
+            
+            foreach (var st in _states.Values)
+                st.Initialize(this);
         }
         
         public void ChangeState(PlayerState newState)
         {
             if (!IsOwner) return;
             if (currentState.Value == newState) return;
+
             currentState.Value = newState;
         }
-
-        private void OnStateChangedCallback(PlayerState previousState, PlayerState newState)
-        {
-            if (_activeState != null)
+        
+        private void OnStateChangedCallback(PlayerState prev, PlayerState next)
+        { 
+            _activeState?.OnExit();
+            if (_states.TryGetValue(next, out var st))
             {
-                _activeState.OnExit();
+                _activeState = st;
+                _activeState.OnEnter();
             }
-            if (_states.TryGetValue(newState, out var state))
-            {
-                _activeState = state;
-                if (HasAuthority) _activeState.OnEnter();
-            }
-            OnStateChanged?.Invoke(previousState, newState);
-        }
-        public void EnterVehicle(VehicleController vehicleController, int seatIndex)
-        {
-            if (!HasAuthority) return;
-            EnterVehicleRpc(new NetworkBehaviourReference(vehicleController), seatIndex);
-        }
-
-        [Rpc(SendTo.Everyone)]
-        private void EnterVehicleRpc(NetworkBehaviourReference vehicleRef, int seatIndex)
-        {
-            if (vehicleRef.TryGet(out VehicleController vehicle, NetworkManager))
-            {
-                _currentVehicle = vehicle;
-                if (_states[PlayerState.Vehicle] is PlayerVehicleState vehicleState)
-                {
-                    vehicleState.SetVehicle(vehicle);
-                }
-                if (playerCollider) playerCollider.enabled = false;
-                var seatManager = vehicle.GetComponent<VehicleSeatManager>();
-                Transform targetSeat = seatManager.GetSeatTransformByIndex(seatIndex); 
-                if (targetSeat != null)
-                {
-                    transform.position = targetSeat.position;
-                    transform.rotation = targetSeat.rotation;
-                }
-                if (HasAuthority)
-                {
-                    ChangeState(PlayerState.Vehicle);
-                }
-            }
+            OnStateChanged?.Invoke(prev, next);
         }
         
-
-        public void NetworkUpdate(NetworkUpdateStage updateStage)
+        public void NetworkUpdate(NetworkUpdateStage stage)
         {
-            switch (updateStage)
+            if (_activeState == null) return;
+
+            switch (stage)
             {
                 case NetworkUpdateStage.Update:
-                    _activeState?.OnNetworkUpdate();
+                    _activeState.OnNetworkUpdate();
                     break;
+
                 case NetworkUpdateStage.FixedUpdate:
-                    _activeState?.OnNetworkFixedUpdate();
+                    _activeState.OnNetworkFixedUpdate();
                     break;
             }
         }
-        
-        public VehicleController GetCurrentVehicle() => _currentVehicle;
     }
 }

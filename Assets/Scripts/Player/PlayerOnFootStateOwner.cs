@@ -5,17 +5,22 @@ using UnityEngine.InputSystem;
 
 namespace Game.Player
 {
-    public class PlayerOnFootState : PlayerStateBase
+    public class PlayerOnFootStateOwner : PlayerStateBase
     {
         private PlayerController _playerController;
         private PlayerInput _playerInput;
         private Rigidbody _rb;
-        
+
+        internal override void Initialize(PlayerStateMachine playerStateMachine)
+        {
+            base.Initialize(playerStateMachine);
+            _playerController = playerStateMachine.playerController;
+            _playerInput = playerStateMachine.playerInput;
+            _rb = playerStateMachine.rb;
+        }
+
         public override void OnEnter()
         {
-            _playerController = StateMachine.playerController;
-            _playerInput = StateMachine.playerInput;
-            _rb  = StateMachine.rb;
             _playerController.enabled = true;
             _playerInput.enabled=true;
             _rb.isKinematic = false;
@@ -43,8 +48,8 @@ namespace Game.Player
 
         public override void OnExit()
         {
-            GameInput.Actions.Player.Jump.performed -=OnJumped;
             base.OnExit();
+            GameInput.Actions.Player.Jump.performed -=OnJumped;
         }
     }
 }

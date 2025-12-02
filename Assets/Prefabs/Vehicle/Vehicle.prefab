@@ -4376,7 +4376,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4244139175
+  GlobalObjectIdHash: 1195149122
   InScenePlacedSourceGlobalObjectIdHash: 2821133724
   DeferredDespawnTick: 0
   Ownership: 3
@@ -4403,12 +4403,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Game.Vehicle.SimpleCarController
   ShowTopMostFoldoutHeaderGroup: 1
   rb: {fileID: 5194048265131235105}
+  seatManager: {fileID: 0}
   wheels:
   - {fileID: 6726947198567593842}
   - {fileID: 1638875022003181330}
   - {fileID: 5978517147097033419}
   - {fileID: 1114187143883752882}
-  seatManager: {fileID: 0}
   maxMotorTorque: 900
   maxBrakeTorque: 3000
   maxSteerAngle: 35

@@ -97,7 +97,7 @@ namespace Game.UI
         
         private static string GenerateRandomSessionName()
         {
-            int number = UnityEngine.Random.Range(1, 10);
+            int number = UnityEngine.Random.Range(1, 1);
             return number.ToString();
         }
 

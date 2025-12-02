@@ -1,3 +1,4 @@
+using System;
 using Game.Gameplay;
 using Game.Input;
 using Game.Vehicle;
@@ -20,12 +21,11 @@ namespace Game.Player
         
         private IInteractable _currentInteractable;
         private PlayerStateMachine _stateMachine;
+        private PlayerVehicleHandler _playerVehicleHandler;
         private readonly Collider[] _overlapResults = new Collider[8];
 
         private void Awake()
         {
-            _stateMachine = GetComponent<PlayerStateMachine>();
-
             if (raycastOrigin == null) raycastOrigin = transform;
             if (interactCollider == null)
             {
@@ -33,6 +33,13 @@ namespace Game.Player
                 interactCollider.isTrigger = true;
                 interactCollider.size = new Vector3(interactionRange * 2, 2f, interactionRange * 2); 
             }
+        }
+
+
+        private void Start()
+        {
+            _stateMachine = GetComponent<PlayerStateMachine>();
+            _playerVehicleHandler = GetComponent<PlayerVehicleHandler>();
         }
 
         public override void OnNetworkSpawn()
@@ -69,6 +76,11 @@ namespace Game.Player
         {
             if (_currentInteractable == null || !_currentInteractable.CanInteract())
                 return;
+            if (_currentInteractable is VehicleController vehicle)
+            {
+                Debug.Log(_playerVehicleHandler==null);
+                _playerVehicleHandler.TryEnterVehicle(vehicle);
+            }
         }
         
         private void CheckForInteractablesInRange()

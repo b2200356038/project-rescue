@@ -24,6 +24,7 @@ namespace Game.Player
         private VehicleController _currentVehicle;
         private VehicleController _pendingVehicle;
         private PlayerStateMachine _stateMachine;
+        private int _pendingSeatIndex = -1;
 
         public VehicleController CurrentVehicle => _currentVehicle;
         public int SeatIndex => _seatIndex.Value;
@@ -37,66 +38,62 @@ namespace Game.Player
 
         public override void OnNetworkSpawn()
         {
-            base.OnNetworkSpawn();
-
             _vehicleRef.OnValueChanged += OnVehicleRefChanged;
             _seatIndex.OnValueChanged += OnSeatIndexChanged;
-            SyncVehicleState();
+            SyncState();
         }
 
         public override void OnNetworkDespawn()
         {
             _vehicleRef.OnValueChanged -= OnVehicleRefChanged;
             _seatIndex.OnValueChanged -= OnSeatIndexChanged;
-            base.OnNetworkDespawn();
+
+            if (_pendingVehicle != null && _pendingVehicle.NetworkObject != null)
+            {
+                _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
+            }
         }
 
         private void OnVehicleRefChanged(NetworkObjectReference prev, NetworkObjectReference current)
         {
-            SyncVehicleState();
+            SyncState();
         }
 
         private void OnSeatIndexChanged(int prev, int current)
         {
-            SyncVehicleState();
+            SyncState();
         }
 
-        private void SyncVehicleState()
+        private void SyncState()
         {
-            if (_vehicleRef.Value.TryGet(out NetworkObject netObj))
-            {
-                _currentVehicle = netObj.GetComponent<VehicleController>();
-            }
+            if (_vehicleRef.Value.TryGet(out NetworkObject obj))
+                _currentVehicle = obj.GetComponent<VehicleController>();
             else
-            {
                 _currentVehicle = null;
-            }
+
             if (_currentVehicle != null && _seatIndex.Value >= 0)
             {
                 if (_stateMachine.CurrentState != PlayerState.Vehicle)
-                {
                     _stateMachine.ChangeState(PlayerState.Vehicle);
-                }
             }
             else
             {
                 if (_stateMachine.CurrentState == PlayerState.Vehicle)
-                {
                     _stateMachine.ChangeState(PlayerState.OnFoot);
-                }
             }
         }
 
         public void TryEnterVehicle(VehicleController vehicle)
         {
             if (!IsOwner) return;
+            if (_pendingVehicle != null) return;
             if (IsInVehicle) return;
-            _pendingVehicle = vehicle;
-            vehicle.RequestEnter(OwnerClientId, OnEnterResponse);
-        }
-        
 
-        private void OnEnterResponse(bool success, int seatIndex, bool isDriver)
+            _pendingVehicle = vehicle;
+            vehicle.RequestSeat(OwnerClientId, OnSeatResponse);
+        }
+
+        private void OnSeatResponse(bool success, int seatIndex, bool isDriver)
         {
             if (!success)
             {
@@ -104,11 +101,68 @@ namespace Game.Player
                 return;
             }
 
-            _currentVehicle = _pendingVehicle;
+            _pendingSeatIndex = seatIndex;
+
+            if (isDriver)
+            {
+                if (_pendingVehicle.NetworkObject.HasAuthority)
+                {
+                    FinalizeEnterVehicle(seatIndex, true);
+                }
+                else
+                {
+                    _pendingVehicle.NetworkObject.OnOwnershipRequestResponse += OnOwnershipRequestResponse;
+                    var status = _pendingVehicle.NetworkObject.RequestOwnership();
+
+                    if (status != NetworkObject.OwnershipRequestStatus.RequestSent)
+                    {
+                        _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
+                        _pendingVehicle = null;
+                        _pendingSeatIndex = -1;
+                    }
+                }
+            }
+            else
+            {
+                FinalizeEnterVehicle(seatIndex, false);
+            }
+        }
+
+        private void OnOwnershipRequestResponse(NetworkObject.OwnershipRequestResponseStatus status)
+        {
+            if (_pendingVehicle != null)
+            {
+                _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
+            }
+
+            if (status == NetworkObject.OwnershipRequestResponseStatus.Approved)
+            {
+                FinalizeEnterVehicle(_pendingSeatIndex, true);
+            }
+            else
+            {
+                _pendingVehicle = null;
+                _pendingSeatIndex = -1;
+            }
+        }
+
+        private void FinalizeEnterVehicle(int seatIndex, bool isDriver)
+        {
+            if (_pendingVehicle == null) return;
+            VehicleController vehicleToEnter = _pendingVehicle;
             _pendingVehicle = null;
-            _vehicleRef.Value = new NetworkObjectReference(_currentVehicle.NetworkObject);
-            _seatIndex.Value = seatIndex;
+
+            if (vehicleToEnter.NetworkObject == null)
+            {
+                Debug.LogError("Vehicle NetworkObject yok!");
+                return;
+            }
+
+            var networkObjRef = new NetworkObjectReference(vehicleToEnter.NetworkObject);
+            _vehicleRef.Value = networkObjRef;
             _isDriver.Value = isDriver;
+            _seatIndex.Value = seatIndex;
+            _currentVehicle = vehicleToEnter;
         }
 
         public void TryExitVehicle()

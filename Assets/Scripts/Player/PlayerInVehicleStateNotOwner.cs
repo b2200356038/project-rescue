@@ -18,7 +18,7 @@ namespace Game.Player
         public override void OnEnter()
         {
             _vehicle = _vehicleHandler.CurrentVehicle;
-            _seatTransform = _vehicle?.SeatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
+            _seatTransform = _vehicle?.seatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
             StateMachine.rb.isKinematic = true;
             StateMachine.playerCollider.enabled = false;
             SnapToSeat();

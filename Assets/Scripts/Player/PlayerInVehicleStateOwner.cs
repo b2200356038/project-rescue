@@ -22,7 +22,7 @@ namespace Game.Player
         {
             _vehicle = _vehicleHandler.CurrentVehicle;
             _isDriver = _vehicleHandler.IsDriver;
-            _seatTransform = _vehicle.SeatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
+            _seatTransform = _vehicle.seatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
             StateMachine.rb.isKinematic = true;
             StateMachine.playerCollider.enabled = false;
             StateMachine.playerController.enabled = false;

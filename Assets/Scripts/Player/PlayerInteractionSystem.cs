@@ -78,7 +78,6 @@ namespace Game.Player
                 return;
             if (_currentInteractable is VehicleController vehicle)
             {
-                Debug.Log(_playerVehicleHandler==null);
                 _playerVehicleHandler.TryEnterVehicle(vehicle);
             }
         }

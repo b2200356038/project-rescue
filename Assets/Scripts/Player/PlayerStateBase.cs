@@ -1,27 +1,29 @@
-using Game.Physics;
-using UnityEngine;
-using UnityEngine.InputSystem;
-
 namespace Game.Player
-
 {
     public enum PlayerState
     {
         None,
         OnFoot,
         Vehicle,
-        Observer  
+        Observer
     }
+
     public abstract class PlayerStateBase
     {
         internal PlayerStateMachine StateMachine;
+
         public virtual void OnEnter() { }
         public virtual void OnExit() { }
         public virtual void OnUpdate() { }
         public virtual void OnFixedUpdate() { }
+        public virtual void OnLateUpdate() { }
         public virtual void OnNetworkUpdate() { }
         public virtual void OnNetworkFixedUpdate() { }
-        internal virtual void Initialize(PlayerStateMachine playerStateMachine) { }
-        
+        public virtual void OnNetworkLateUpdate() { }
+
+        internal virtual void Initialize(PlayerStateMachine playerStateMachine)
+        {
+            StateMachine = playerStateMachine;
+        }
     }
 }

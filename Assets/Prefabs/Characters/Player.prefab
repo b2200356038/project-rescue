@@ -339,7 +339,7 @@ MonoBehaviour:
   rb: {fileID: 4745766379562620470}
   playerController: {fileID: 4710238820213277529}
   playerInput: {fileID: 4903152183366241606}
-  playerCollider: {fileID: 0}
+  playerCollider: {fileID: 7278303531120423641}
   currentState:
     m_InternalValue: 0
 --- !u!114 &1519568112191677880

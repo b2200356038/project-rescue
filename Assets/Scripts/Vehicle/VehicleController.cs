@@ -8,27 +8,25 @@ namespace Game.Vehicle
 {
     public class VehicleController : NetworkBehaviour, IInteractable
     {
-        [Header("References")] [SerializeField]
-        private Rigidbody rb;
-
+        [Header("References")]
+        [SerializeField] private Rigidbody rb;
         [SerializeField] private VehicleSeatManager seatManager;
         [SerializeField] private WheelController[] wheels;
 
-        [Header("Drive Settings")] [SerializeField]
-        private float maxMotorTorque = 900f;
-
+        [Header("Drive Settings")]
+        [SerializeField] private float maxMotorTorque = 900f;
         [SerializeField] private float maxBrakeTorque = 3000f;
         [SerializeField] private float maxSteerAngle = 28f;
         [SerializeField] private float minSteerAngle = 12f;
         [SerializeField] private float steerSmooth = 0.10f;
 
-        [Header("Wheel Assignment")] [SerializeField]
-        private int[] steerWheels = { 0, 1 };
-
+        [Header("Wheel Assignment")]
+        [SerializeField] private int[] steerWheels = { 0, 1 };
         [SerializeField] private int[] driveWheels = { 0, 1, 2, 3 };
         [SerializeField] private int[] handbrakeWheels = { 2, 3 };
 
-        [Header("Network")] [SerializeField] private float wheelSyncRate = 30f;
+        [Header("Network")]
+        [SerializeField] private float wheelSyncRate = 30f;
 
         private Vector2 _moveInput;
         private bool _handbrakeInput;
@@ -43,6 +41,8 @@ namespace Game.Vehicle
 
         private Action<bool, int, bool> _pendingEnterCallback;
         private Action<bool> _pendingExitCallback;
+        private int _pendingSeatIndex = -1;
+        private bool _pendingIsDriver;
 
         public VehicleSeatManager SeatManager => seatManager;
         public Rigidbody Rigidbody => rb;
@@ -61,113 +61,163 @@ namespace Game.Vehicle
             {
                 NetworkObject.SetOwnershipStatus(NetworkObject.OwnershipStatus.Transferable);
                 NetworkObject.SetOwnershipStatus(NetworkObject.OwnershipStatus.RequestRequired);
-                ResetInputs();
+                SetupAsAuthority();
             }
             else
             {
-                SetWheelsRemoteMode(true);
-                _wheelsState.OnValueChanged += OnWheelsStateChanged;
-                ApplyWheelsState(_wheelsState.Value);
+                SetupAsRemote();
             }
 
             NetworkObject.OnOwnershipRequested += OnOwnershipRequested;
+            NetworkObject.OnOwnershipRequestResponse += OnOwnershipRequestResponse;
+            _wheelsState.OnValueChanged += OnWheelsStateChanged;
         }
 
         public override void OnNetworkDespawn()
         {
             NetworkObject.OnOwnershipRequested -= OnOwnershipRequested;
-
-            if (!HasAuthority)
-            {
-                _wheelsState.OnValueChanged -= OnWheelsStateChanged;
-            }
-
+            NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
+            _wheelsState.OnValueChanged -= OnWheelsStateChanged;
             base.OnNetworkDespawn();
         }
 
         protected override void OnOwnershipChanged(ulong previous, ulong current)
         {
             base.OnOwnershipChanged(previous, current);
-    
-            if (HasAuthority)
+
+            bool isNowAuthority = NetworkManager.Singleton.LocalClientId == current;
+
+            if (isNowAuthority)
             {
-                SetWheelsRemoteMode(false);
-                ResetInputs();
+                SetupAsAuthority();
             }
             else
             {
-                SetWheelsRemoteMode(true);
-                ApplyWheelsState(_wheelsState.Value);
+                SetupAsRemote();
             }
+        }
+
+        private void SetupAsAuthority()
+        {
+            SetWheelsRemoteMode(false);
+            ResetInputs();
+        }
+
+        private void SetupAsRemote()
+        {
+            SetWheelsRemoteMode(true);
+            ApplyWheelsState(_wheelsState.Value);
         }
 
         private bool OnOwnershipRequested(ulong clientRequesting)
         {
-            return seatManager.IsDriverSeatEmpty();
+            int driverSeatIndex = seatManager.GetDriverSeatIndex();
+            if (driverSeatIndex == -1) return false;
+
+            int clientSeatIndex = seatManager.GetSeatIndex(clientRequesting);
+            return clientSeatIndex == driverSeatIndex;
+        }
+
+        private void OnOwnershipRequestResponse(NetworkObject.OwnershipRequestResponseStatus status)
+        {
+            if (_pendingEnterCallback == null) return;
+
+            if (status == NetworkObject.OwnershipRequestResponseStatus.Approved)
+            {
+                _pendingEnterCallback.Invoke(true, _pendingSeatIndex, _pendingIsDriver);
+            }
+            else
+            {
+                ReleaseSeatRpc(_pendingSeatIndex);
+                _pendingEnterCallback.Invoke(false, -1, false);
+            }
+
+            _pendingEnterCallback = null;
+            _pendingSeatIndex = -1;
+            _pendingIsDriver = false;
         }
 
         public void RequestEnter(ulong clientId, Action<bool, int, bool> callback)
         {
             _pendingEnterCallback = callback;
-            RequestEnterServerRpc(clientId);
+            ReserveSeatRpc(clientId);
         }
 
         public void RequestExit(ulong clientId, Action<bool> callback)
         {
             _pendingExitCallback = callback;
-            RequestExitServerRpc(clientId);
+            RequestExitRpc(clientId);
         }
-
         [Rpc(SendTo.Authority)]
-        private void RequestEnterServerRpc(ulong clientId, RpcParams rpcParams = default)
+        private void ReserveSeatRpc(ulong clientId, RpcParams rpcParams = default)
         {
-            Debug.Log("request");
             ulong senderId = rpcParams.Receive.SenderClientId;
-
             if (!seatManager.TryGetAvailableSeat(out int seatIndex, out bool isDriverSeat))
             {
-                RespondEnterClientRpc(false, -1, false, RpcTarget.Single(senderId, RpcTargetUse.Temp));
+                SeatReservedResponseRpc(false, -1, false, RpcTarget.Single(senderId, RpcTargetUse.Temp));
                 return;
             }
             seatManager.ClaimSeat(seatIndex, clientId);
-
-            if (isDriverSeat)
-            {
-                NetworkObject.ChangeOwnership(clientId);
-            }
-            RespondEnterClientRpc(true, seatIndex, isDriverSeat, RpcTarget.Single(senderId, RpcTargetUse.Temp));
+            SeatReservedResponseRpc(true, seatIndex, isDriverSeat, RpcTarget.Single(senderId, RpcTargetUse.Temp));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
-        private void RespondEnterClientRpc(bool success, int seatIndex, bool isDriver, RpcParams rpcParams = default)
+        private void SeatReservedResponseRpc(bool success, int seatIndex, bool isDriver, RpcParams rpcParams = default)
         {
-            _pendingEnterCallback?.Invoke(success, seatIndex, isDriver);
-            _pendingEnterCallback = null;
+            if (!success)
+            {
+                _pendingEnterCallback?.Invoke(false, -1, false);
+                _pendingEnterCallback = null;
+                return;
+            }
+
+            _pendingSeatIndex = seatIndex;
+            _pendingIsDriver = isDriver;
+
+            if (isDriver)
+            {
+                NetworkObject.RequestOwnership();
+            }
+            else
+            {
+                _pendingEnterCallback?.Invoke(true, seatIndex, false);
+                _pendingEnterCallback = null;
+                _pendingSeatIndex = -1;
+                _pendingIsDriver = false;
+            }
         }
 
         [Rpc(SendTo.Authority)]
-        private void RequestExitServerRpc(ulong clientId, RpcParams rpcParams = default)
+        private void ReleaseSeatRpc(int seatIndex)
+        {
+            seatManager.ReleaseSeat(seatIndex);
+        }
+
+        [Rpc(SendTo.Authority)]
+        private void RequestExitRpc(ulong clientId, RpcParams rpcParams = default)
         {
             ulong senderId = rpcParams.Receive.SenderClientId;
             int seatIndex = seatManager.GetSeatIndex(clientId);
+
             if (seatIndex == -1)
             {
-                RespondExitClientRpc(false, RpcTarget.Single(senderId, RpcTargetUse.Temp));
+                ExitResponseRpc(false, RpcTarget.Single(senderId, RpcTargetUse.Temp));
                 return;
             }
 
             bool wasDriver = seatManager.IsDriverSeat(seatIndex);
             seatManager.ReleaseSeat(seatIndex);
+
             if (wasDriver)
             {
                 ResetInputs();
             }
 
-            RespondExitClientRpc(true, RpcTarget.Single(senderId, RpcTargetUse.Temp));
+            ExitResponseRpc(true, RpcTarget.Single(senderId, RpcTargetUse.Temp));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
-        private void RespondExitClientRpc(bool success, RpcParams rpcParams = default)
+        private void ExitResponseRpc(bool success, RpcParams rpcParams = default)
         {
             _pendingExitCallback?.Invoke(success);
             _pendingExitCallback = null;
@@ -195,10 +245,8 @@ namespace Game.Vehicle
 
         private void FixedUpdate()
         {
-            Debug.Log(HasAuthority);
-
             if (!HasAuthority) return;
-            return;
+
             ApplySteer();
             ApplyMotorAndBrake();
 
@@ -237,7 +285,6 @@ namespace Game.Vehicle
                 {
                     wheels[id].brakeTorque = maxBrakeTorque;
                 }
-
                 return;
             }
 
@@ -257,7 +304,10 @@ namespace Game.Vehicle
 
         private void OnWheelsStateChanged(WheelsVisualState previous, WheelsVisualState current)
         {
-            ApplyWheelsState(current);
+            if (!HasAuthority)
+            {
+                ApplyWheelsState(current);
+            }
         }
 
         private void ApplyWheelsState(WheelsVisualState state)

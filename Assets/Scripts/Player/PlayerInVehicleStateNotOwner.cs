@@ -18,25 +18,24 @@ namespace Game.Player
         public override void OnEnter()
         {
             _vehicle = _vehicleHandler.CurrentVehicle;
-            _seatTransform = _vehicle?.seatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
             StateMachine.rb.isKinematic = true;
             StateMachine.playerCollider.enabled = false;
-            SnapToSeat();
+            if (_vehicle != null && _seatTransform != null)
+            {
+                StateMachine.transform.SetParent(_vehicle.transform);
+                Vector3 seatLocalPos = _vehicle.transform.InverseTransformPoint(_seatTransform.position);
+                Quaternion seatLocalRot = Quaternion.Inverse(_vehicle.transform.rotation) * _seatTransform.rotation;
+                StateMachine.transform.localPosition = seatLocalPos;
+                StateMachine.transform.localRotation = seatLocalRot;
+            }
+        }
+
+
+        public override void OnNetworkLateUpdate()
+        {
+            base.OnNetworkLateUpdate();
         }
         
-
-        public override void OnLateUpdate()
-        {
-            base.OnLateUpdate();
-            SnapToSeat();
-        }
-
-        private void SnapToSeat()
-        {
-            if (_seatTransform == null) return;
-            StateMachine.transform.position = _seatTransform.position;
-            StateMachine.transform.rotation = _seatTransform.rotation;
-        }
 
         public override void OnExit()
         {

@@ -21,28 +21,25 @@ namespace Game.Player
         public override void OnEnter()
         {
             _vehicle = _vehicleHandler.CurrentVehicle;
-            _isDriver = _vehicleHandler.IsDriver;
-            _seatTransform = _vehicle.seatManager.GetSeatTransformByIndex(_vehicleHandler.SeatIndex);
             StateMachine.rb.isKinematic = true;
             StateMachine.playerCollider.enabled = false;
             StateMachine.playerController.enabled = false;
-            SnapToSeat();
-            if (_isDriver)
+
+            if (_vehicle != null && _seatTransform != null)
             {
-                InputSystemManager.Instance.EnableVehicleInputs();
-            }
-            else
-            {
-                InputSystemManager.Instance.EnableUIInputs();
+                StateMachine.transform.SetParent(_vehicle.transform);
+                Vector3 seatLocalPos = _vehicle.transform.InverseTransformPoint(_seatTransform.position);
+                Quaternion seatLocalRot = Quaternion.Inverse(_vehicle.transform.rotation) * _seatTransform.rotation;
+                StateMachine.transform.localPosition = seatLocalPos;
+                StateMachine.transform.localRotation = seatLocalRot;
             }
 
+            InputSystemManager.Instance.EnableVehicleInputs();
             GameInput.Actions.Vehicle.Interact.performed += OnInteractPerformed;
         }
 
         public override void OnNetworkUpdate()
         {
-            Debug.Log(_isDriver);
-            Debug.Log(_vehicle==null);
             if (!_isDriver || _vehicle == null) return;
             var moveInput = GameInput.Actions.Vehicle.Move.ReadValue<Vector2>();
             _vehicle.SetMovement(moveInput);
@@ -56,19 +53,12 @@ namespace Game.Player
 
         public override void OnLateUpdate()
         {
-            SnapToSeat();
-        }
-
-        private void SnapToSeat()
-        {
-            if (_seatTransform == null) return;
-            StateMachine.transform.position = _seatTransform.position;
-            StateMachine.transform.rotation = _seatTransform.rotation;
+            
         }
 
         private void OnInteractPerformed(InputAction.CallbackContext context)
         {
-            _vehicleHandler.TryExitVehicle();
+            _vehicleHandler.ExitVehicle();
         }
 
         public override void OnExit()
@@ -76,13 +66,15 @@ namespace Game.Player
             base.OnExit();
 
             GameInput.Actions.Vehicle.Interact.performed -= OnInteractPerformed;
+            StateMachine.transform.SetParent(null);
+
             if (_vehicle != null)
             {
                 Transform exitPoint = _vehicle.SeatManager.GetExitPoint();
                 StateMachine.transform.position = exitPoint.position;
-                StateMachine.transform.rotation = exitPoint.rotation;
+                StateMachine.transform.rotation = Quaternion.identity;
             }
-
+            
             StateMachine.rb.isKinematic = false;
             StateMachine.playerCollider.enabled = true;
             _vehicle = null;

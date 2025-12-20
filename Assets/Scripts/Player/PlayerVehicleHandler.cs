@@ -1,3 +1,4 @@
+using Game.Gameplay;
 using Game.Vehicle;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,26 +12,13 @@ namespace Game.Player
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
-        private readonly NetworkVariable<int> _seatIndex = new(
-            -1,
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Owner);
-
-        private readonly NetworkVariable<bool> _isDriver = new(
-            false,
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Owner);
-
         private VehicleController _currentVehicle;
         private VehicleController _pendingVehicle;
+        private VehicleController _targetVehicle;
         private PlayerStateMachine _stateMachine;
-        private int _pendingSeatIndex = -1;
 
         public VehicleController CurrentVehicle => _currentVehicle;
-        public int SeatIndex => _seatIndex.Value;
-        public bool IsDriver => _isDriver.Value;
-        public bool IsInVehicle => _currentVehicle != null && _seatIndex.Value >= 0;
-
+        
         private void Awake()
         {
             _stateMachine = GetComponent<PlayerStateMachine>();
@@ -39,56 +27,122 @@ namespace Game.Player
         public override void OnNetworkSpawn()
         {
             _vehicleRef.OnValueChanged += OnVehicleRefChanged;
-            _seatIndex.OnValueChanged += OnSeatIndexChanged;
-            SyncState();
+            if (!IsOwner && _vehicleRef.Value.TryGet(out NetworkObject obj))
+            {
+                _currentVehicle = obj.GetComponent<VehicleController>();
+            }
         }
 
         public override void OnNetworkDespawn()
         {
             _vehicleRef.OnValueChanged -= OnVehicleRefChanged;
-            _seatIndex.OnValueChanged -= OnSeatIndexChanged;
 
-            if (_pendingVehicle != null && _pendingVehicle.NetworkObject != null)
+            if (_targetVehicle != null && _targetVehicle.NetworkObject != null)
             {
-                _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
+                 if (_targetVehicle is IOwnershipRequestable requestable)
+                 {
+                     requestable.OnNetworkObjectOwnershipRequestResponse -= OnOwnershipRequestResponse;
+                 }
             }
         }
 
         private void OnVehicleRefChanged(NetworkObjectReference prev, NetworkObjectReference current)
         {
-            SyncState();
-        }
-
-        private void OnSeatIndexChanged(int prev, int current)
-        {
-            SyncState();
-        }
-
-        private void SyncState()
-        {
-            if (_vehicleRef.Value.TryGet(out NetworkObject obj))
+            if (IsOwner)
+            {
+                if (!current.TryGet(out _))
+                {
+                    _currentVehicle = null;
+                    if (_stateMachine.CurrentState == PlayerState.Vehicle)
+                    {
+                        _stateMachine.ChangeState(PlayerState.OnFoot);
+                    }
+                }
+                _stateMachine.ChangeState(PlayerState.Vehicle);
+                return;
+            }
+            if (current.TryGet(out NetworkObject obj))
+            {
                 _currentVehicle = obj.GetComponent<VehicleController>();
-            else
-                _currentVehicle = null;
-
-            if (_currentVehicle != null && _seatIndex.Value >= 0)
-            {
-                if (_stateMachine.CurrentState != PlayerState.Vehicle)
-                    _stateMachine.ChangeState(PlayerState.Vehicle);
             }
             else
             {
-                if (_stateMachine.CurrentState == PlayerState.Vehicle)
-                    _stateMachine.ChangeState(PlayerState.OnFoot);
+                _currentVehicle = null;
             }
         }
+        
 
         public void TryEnterVehicle(VehicleController vehicle)
         {
             if (!IsOwner) return;
             if (_pendingVehicle != null) return;
-            if (IsInVehicle) return;
+            _targetVehicle = vehicle;
+            bool needsOwnership = _targetVehicle.SeatManager.IsDriverSeatEmpty();
 
+            if (needsOwnership)
+            {
+                HandleOwnershipTransferAndEnter(_targetVehicle);
+            }
+            else
+            {
+                RequestSeatEntry(_targetVehicle);
+            }
+        }
+
+        private void HandleOwnershipTransferAndEnter(VehicleController vehicle)
+        {
+            NetworkObject targetNetObj = vehicle.NetworkObject;
+
+            if (targetNetObj.HasAuthority)
+            {
+                RequestSeatEntry(vehicle);
+                return;
+            }
+
+            if (targetNetObj.IsOwnershipTransferable)
+            {
+                 targetNetObj.ChangeOwnership(OwnerClientId);
+                 RequestSeatEntry(vehicle);
+            }
+            else 
+            {
+                if (vehicle is IOwnershipRequestable requestable)
+                {
+                    requestable.OnNetworkObjectOwnershipRequestResponse += OnOwnershipRequestResponse;
+                }
+                
+                var status = targetNetObj.RequestOwnership();
+                
+                if (status != NetworkObject.OwnershipRequestStatus.RequestSent)
+                {
+                    if (vehicle is IOwnershipRequestable r) r.OnNetworkObjectOwnershipRequestResponse -= OnOwnershipRequestResponse;
+                    _targetVehicle = null;
+                }
+            }
+        }
+
+        private void OnOwnershipRequestResponse(NetworkBehaviour behaviour, NetworkObject.OwnershipRequestResponseStatus status)
+        {
+            if (behaviour is IOwnershipRequestable requestable)
+            {
+                requestable.OnNetworkObjectOwnershipRequestResponse -= OnOwnershipRequestResponse;
+            }
+
+            if (status == NetworkObject.OwnershipRequestResponseStatus.Approved)
+            {
+                if (behaviour is VehicleController vehicle)
+                {
+                    RequestSeatEntry(vehicle);
+                }
+            }
+            else
+            {
+                _targetVehicle = null;
+            }
+        }
+
+        private void RequestSeatEntry(VehicleController vehicle)
+        {
             _pendingVehicle = vehicle;
             vehicle.RequestSeat(OwnerClientId, OnSeatResponse);
         }
@@ -98,89 +152,31 @@ namespace Game.Player
             if (!success)
             {
                 _pendingVehicle = null;
+                _targetVehicle = null;
                 return;
             }
-
-            _pendingSeatIndex = seatIndex;
-
-            if (isDriver)
-            {
-                if (_pendingVehicle.NetworkObject.HasAuthority)
-                {
-                    FinalizeEnterVehicle(seatIndex, true);
-                }
-                else
-                {
-                    _pendingVehicle.NetworkObject.OnOwnershipRequestResponse += OnOwnershipRequestResponse;
-                    var status = _pendingVehicle.NetworkObject.RequestOwnership();
-
-                    if (status != NetworkObject.OwnershipRequestStatus.RequestSent)
-                    {
-                        _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
-                        _pendingVehicle = null;
-                        _pendingSeatIndex = -1;
-                    }
-                }
-            }
-            else
-            {
-                FinalizeEnterVehicle(seatIndex, false);
-            }
+            FinalizeEnterVehicle();
         }
 
-        private void OnOwnershipRequestResponse(NetworkObject.OwnershipRequestResponseStatus status)
-        {
-            if (_pendingVehicle != null)
-            {
-                _pendingVehicle.NetworkObject.OnOwnershipRequestResponse -= OnOwnershipRequestResponse;
-            }
-
-            if (status == NetworkObject.OwnershipRequestResponseStatus.Approved)
-            {
-                FinalizeEnterVehicle(_pendingSeatIndex, true);
-            }
-            else
-            {
-                _pendingVehicle = null;
-                _pendingSeatIndex = -1;
-            }
-        }
-
-        private void FinalizeEnterVehicle(int seatIndex, bool isDriver)
+        private void FinalizeEnterVehicle()
         {
             if (_pendingVehicle == null) return;
-            VehicleController vehicleToEnter = _pendingVehicle;
+            
+            _currentVehicle = _pendingVehicle;
             _pendingVehicle = null;
-
-            if (vehicleToEnter.NetworkObject == null)
+            _targetVehicle = null;
+            if (_currentVehicle.NetworkObject == null)
             {
-                Debug.LogError("Vehicle NetworkObject yok!");
                 return;
             }
-
-            var networkObjRef = new NetworkObjectReference(vehicleToEnter.NetworkObject);
-            _vehicleRef.Value = networkObjRef;
-            _isDriver.Value = isDriver;
-            _seatIndex.Value = seatIndex;
-            _currentVehicle = vehicleToEnter;
+            _vehicleRef.Value = new NetworkObjectReference(_currentVehicle.NetworkObject);
         }
 
-        public void TryExitVehicle()
-        {
+        public void ExitVehicle()
+        {   
             if (!IsOwner) return;
-            if (!IsInVehicle) return;
-
-            _currentVehicle.RequestExit(OwnerClientId, OnExitResponse);
-        }
-
-        private void OnExitResponse(bool success)
-        {
-            if (!success) return;
-
+            _currentVehicle.RequestExit(OwnerClientId);
             _vehicleRef.Value = default;
-            _seatIndex.Value = -1;
-            _isDriver.Value = false;
-            _currentVehicle = null;
         }
     }
 }

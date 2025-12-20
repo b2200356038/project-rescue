@@ -40,7 +40,6 @@ namespace Game.Vehicle
             NetworkVariableWritePermission.Owner);
 
         private Action<bool, int, bool> _pendingSeatCallback;
-        private Action<bool> _pendingExitCallback;
 
         public VehicleSeatManager SeatManager => seatManager;
         public Rigidbody Rigidbody => rb;
@@ -84,7 +83,11 @@ namespace Game.Vehicle
 
         protected override bool OnOwnershipRequested(ulong clientRequesting)
         {
-            return true;
+            if (!seatManager.IsDriverSeatEmpty())
+            {
+                return false;
+            }
+            return base.OnOwnershipRequested(clientRequesting);
         }
 
         private void SetupAsAuthority()
@@ -127,41 +130,33 @@ namespace Game.Vehicle
             _pendingSeatCallback = null;
         }
 
-        public void RequestExit(ulong clientId, Action<bool> callback)
+        // --- GÜNCELLENEN KISIM: Callback kaldırıldı ---
+        public void RequestExit(ulong clientId)
         {
-            _pendingExitCallback = callback;
+            // Sadece bildiriyoruz, cevap beklemiyoruz.
             RequestExitRpc(clientId);
         }
 
         [Rpc(SendTo.Authority)]
         private void RequestExitRpc(ulong clientId, RpcParams rpcParams = default)
         {
-            ulong sender = rpcParams.Receive.SenderClientId;
+            // İsteği gönderen veya işlem yapılması gereken client
+            // (Distributed Authority yapısında bu RPC otoriteye düşer)
             int seatIndex = seatManager.GetSeatIndex(clientId);
 
-            if (seatIndex == -1)
+            if (seatIndex != -1)
             {
-                ExitResponseRpc(false, RpcTarget.Single(sender, RpcTargetUse.Temp));
-                return;
+                bool wasDriver = seatManager.IsDriverSeat(seatIndex);
+                seatManager.ReleaseSeat(seatIndex);
+
+                if (wasDriver)
+                {
+                    ResetInputs();
+                }
             }
-
-            bool wasDriver = seatManager.IsDriverSeat(seatIndex);
-            seatManager.ReleaseSeat(seatIndex);
-
-            if (wasDriver)
-            {
-                ResetInputs();
-            }
-
-            ExitResponseRpc(true, RpcTarget.Single(sender, RpcTargetUse.Temp));
+            // ExitResponseRpc kaldırıldı.
         }
-
-        [Rpc(SendTo.SpecifiedInParams)]
-        private void ExitResponseRpc(bool success, RpcParams rpcParams = default)
-        {
-            _pendingExitCallback?.Invoke(success);
-            _pendingExitCallback = null;
-        }
+        // ---------------------------------------------
 
         public void SetMovement(Vector2 input)
         {
